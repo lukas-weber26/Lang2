@@ -184,7 +184,7 @@ void tokenizer_tokenize_program(tokenized_program * program) {
 			tokenizer_new_token("-", SUBTRACT, program, 1);
 			break;
 		case '=': 
-			tokenizer_branch_new_token(program, "==", "=", EQUAL, COMPARE, '=');
+			tokenizer_branch_new_token(program, "==", "=", COMPARE, EQUAL, '=');
 			break;
 		case '>': //>=
 			tokenizer_branch_new_token(program, ">=", ">", GTE, GT, '=');
@@ -288,7 +288,7 @@ void test_tokenizer() {
 	#define test_length 36
 	token test_tokens [test_length] = {
 	{"a", IDENTIFIER, 0, 0},
-	{"==", EQUAL, 0, 1},
+	{"==", COMPARE, 0, 1},
 	{"10", INT, 0, 2},
 	{";", SEMICOLON, 0, 3},
 
