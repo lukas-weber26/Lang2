@@ -1,7 +1,5 @@
 #include "common.h"
 #include <stdio.h>
-#include <string.h>
-
 
 typedef struct ast_node {
 	token * lexer_token; //this contains the type info
@@ -24,9 +22,25 @@ typedef struct parse_error_info {
 
 void parser_parse_tokens(parser * parser);
 void parser_free_parser(parser * parser);
+void parser_free_ast(ast_node * ast_node);
 ast_node * parser_parse_token(parser * parser);
 parser * parser_init(char * input, int expected_token_count); 
-void parser_complete_parsing(parser * parser); //delte tokenized program since it is not needed after a tree is made.
+void parser_print_node_and_children(ast_node * ast_node, int depth);
+void print_depth(int depth);
+void parser_print_program(parser * parser);
+ast_node * parser_parse_let(parser * parser);
+ast_node * parser_parse_return(parser * parser);
+ast_node * new_generic_node();
+int token_token_is_gramar(token * token);
+//expected expressions
+token * create_branch_token(); //used parsing if statements 
+ast_node * parse_let_token(parser * parser);
+ast_node * parse_return_token(parser * parser);
+ast_node * parser_parse_infix(parser * parser);  //this thing needs some kind of prescedence? 
+ast_node * parser_parse_prefix(parser * parser); //this thing needs some kind of prescedence?
+ast_node * parser_parse_if(parser * parser); //this thing needs some kind of prescedence?
+
+//how to handle if? If node has 2 child expressions. left is the condition. Right is a BRANCH node (this is basically a dummy node which has a left and right expression. During eval, the if is replaced by either the left or right child of the branch node.
 
 parser * parser_init(char * input, int approximate_token_count) {
 	tokenized_program * program = tokenizer_init(input, approximate_token_count);
@@ -46,26 +60,7 @@ parser * parser_init(char * input, int approximate_token_count) {
 	return new_parser;
 }
 
-void parser_complete_parsing(parser * parser) {
-	//this is going to cause a massive segfault because instead of copying nodes from the lexer, I am copying addresses. 
-	//tokenizer_delete_program(parser->program); 
-	//parser->program = NULL;
-}
-
-void parser_free_parser(parser * parser) {
-	//todo
-}
-
 //expected functions
-token * create_branch_token(); //used parsing if statements 
-ast_node * parse_let_token(parser * parser);
-ast_node * parse_return_token(parser * parser);
-ast_node * parser_parse_infix(parser * parser);  //this thing needs some kind of prescedence? 
-ast_node * parser_parse_prefix(parser * parser); //this thing needs some kind of prescedence?
-ast_node * parser_parse_if(parser * parser); //this thing needs some kind of prescedence?
-void parser_print_node_and_children(ast_node * ast_node, int depth);
-void print_depth(int depth);
-//how to handle if? If node has 2 child expressions. left is the condition. Right is a BRANCH node (this is basically a dummy node which has a left and right expression. During eval, the if is replaced by either the left or right child of the branch node.
 
 token * create_branch_token() {
 	token * new_token = malloc(sizeof(token));
@@ -76,12 +71,6 @@ token * create_branch_token() {
 	new_token->position = -1;
 	return new_token;
 }
-
-ast_node * parser_parse_let(parser * parser);
-ast_node * parser_parse_return(parser * parser);
-ast_node * new_generic_node();
-ast_node * parser_parse_return_(parser * parser);
-int token_token_is_gramar(token * token);
 
 //could have more functions like this. Think "is valid infix, is valid postfix, etc."
 int token_token_is_gramar(token * token) {
@@ -120,7 +109,15 @@ ast_node * parser_parse_let(parser * parser) {
 		new_let_node->left_node = new_generic_node();
 		new_let_node->left_node->lexer_token = symbol;
 		parser->token_read_index += 3; //next tokenizer pass should be starting at the expression
-		new_let_node->right_node = parser_parse_token(parser); //for now I will not attach values to the nodes.
+
+		//what I should do 
+		//new_let_node->right_node = parser_parse_token(parser); //for now I will not attach values to the nodes.
+
+		//what I will do for now. //IF YOU CHANGE THIS DECREASE THE INCREMENT above
+		new_let_node->right_node = new_generic_node();
+		new_let_node->right_node->lexer_token = expression;
+
+		//experimenting with an int node reql quick.
 		return new_let_node;
 
 	} else {
@@ -130,7 +127,7 @@ ast_node * parser_parse_let(parser * parser) {
 	}
 }
 
-ast_node * parser_parse_return_(parser * parser) {
+ast_node * parser_parse_return(parser * parser) {
 	//get the next couple of tokens to make sure they fit into a let statement
 	int parser_read_index = parser->token_read_index;
 	token ** token_array_pointer = parser->program->tokens;	
@@ -143,8 +140,10 @@ ast_node * parser_parse_return_(parser * parser) {
 	if (!token_token_is_gramar(return_value)) {
 		ast_node * new_return_node = new_generic_node();
 		new_return_node ->lexer_token = return_symbol;
-		parser->token_read_index += 1; 
-		new_return_node -> left_node = parser_parse_token(parser); 
+		parser->token_read_index += 2; //decrease for acutal use
+		new_return_node->left_node= new_generic_node();
+		new_return_node->left_node->lexer_token = return_value;
+		//new_return_node -> left_node = parser_parse_token(parser); 
 		return new_return_node;
 
 	} else {
@@ -152,10 +151,6 @@ ast_node * parser_parse_return_(parser * parser) {
 		printf("Expected return expression, Received %s %s...\n", return_symbol->token_string, return_value->token_string);
 		exit(0);
 	}
-}
-
-ast_node * parser_parse_return(parser * parser) {
-	return NULL;
 }
 
 ast_node * parser_parse_token(parser * parser) {
@@ -189,6 +184,11 @@ void print_depth(int depth) {
 }
 
 void parser_print_node_and_children(ast_node * ast_node, int depth) {
+	
+	if (!ast_node) {
+		return;
+	}
+
 	print_depth(depth);
 	token * current = ast_node->lexer_token;
 
@@ -207,8 +207,20 @@ void parser_print_node_and_children(ast_node * ast_node, int depth) {
 		case IDENTIFIER:
 			printf("IDENTIFIER: %s (%d,%d)\n", current->token_string, current->line, current->position);
 			break;
+		case INT:
+			printf("INTEGER: %s (%d,%d)\n", current->token_string, current->line, current->position);
+			break;
 		default:
 			return;	
+	}
+}
+
+void parser_print_program(parser * parser) {
+	printf("Printing AST. Expecting %d expressions.\n", parser->number_of_expression);
+	int count = 0;
+	while(parser->number_of_expression > count) {
+		parser_print_node_and_children(parser->expressions[count], 0);
+		count ++;
 	}
 }
 
@@ -216,22 +228,121 @@ void parser_print_node_and_children(ast_node * ast_node, int depth) {
 void parser_parse_program(parser * parser) {
 
 	while (parser->program->tokens[parser->token_read_index]->type != END) { 
-		parser->expressions[parser->current_expression] = parser_parse_token(parser);
-		parser->current_expression++;
+		ast_node * new_node = parser_parse_token(parser);
+		if (new_node != NULL) {
+			parser->expressions[parser->current_expression] = new_node;
+			parser->current_expression++;
+		}
 	}
 
 	parser->expressions= realloc(parser->expressions, sizeof(ast_node*) * parser->current_expression);
+	parser->number_of_expression = parser->current_expression;
+}
+
+void parser_free_ast(ast_node * ast_node) {
+
+	if (ast_node->value_pointer != NULL) {
+		free(ast_node->value_pointer); //danger danger... this may become insufficient
+	}
+
+	if (ast_node->left_node != NULL) {
+		parser_free_ast(ast_node->left_node);
+	}
+
+	if (ast_node->right_node != NULL) {
+		parser_free_ast(ast_node->right_node);
+	}
+
+	free(ast_node);
+}
+
+void parser_free_parser(parser * parser) {
+	tokenizer_delete_program(parser->program);
+	
+	int count = 0;
+	while(parser->number_of_expression > count) {
+		parser_free_ast(parser->expressions[count]);
+		count ++;
+	}
+	
+	free(parser->expressions);
+	free(parser);
 }
 
 //a couple of tests for parsing let and return would be good.
-//figuring out what the seocond token in the let x = 10; statement is would also be good.
-//I guess its probably just a stray null value...
-//try your print function out 
+void parser_test_return() {
+	printf("Starting return test.\n");
 
-int main() {
-	char * input = "let x = 10;";
+	char * input = "return 10;\n"
+	"return x;\n"
+	"return y;\n";
+
 	parser * parser = parser_init(input, 10);
 	parser_parse_program(parser);	
-	//test_tokenizer();
+
+	token_type types [] = {INT, IDENTIFIER, IDENTIFIER};
+
+	//run through everything, assert things
+	assert(parser->number_of_expression == 3);
+	int count = 0;
+
+	while(parser->number_of_expression > count) {
+		ast_node * current = parser->expressions[count];
+		assert(current->lexer_token->type == RETURN);
+		assert(current->right_node == NULL);	
+		assert(current->left_node->lexer_token->type == types[count]);
+		assert(current->left_node->left_node == NULL);
+		assert(current->left_node->right_node == NULL);
+		count ++;
+	}
+
+	parser_print_program(parser);
+	parser_free_parser(parser);
+
+	printf("Return test passed.\n");
+}
+
+void parser_test_let() {
+	printf("Starting let test.\n");
+
+	char * input = "let x = 10;\n"
+	"let boing = doing;\n"
+	"let bingus = 4;\n";
+
+	parser * parser = parser_init(input, 10);
+	parser_parse_program(parser);	
+
+	token_type types[] = {INT, IDENTIFIER, INT};
+
+	//run through everything, assert things
+	assert(parser->number_of_expression == 3);
+	int count = 0;
+
+	while(parser->number_of_expression > count) {
+		ast_node * current = parser->expressions[count];
+		assert(current->lexer_token->type == LET);
+		
+		assert(current->left_node->lexer_token->type == IDENTIFIER);
+		assert(current->left_node->left_node == NULL);
+		assert(current->left_node->right_node == NULL);
+
+		assert(current->right_node->lexer_token->type == types[count]);
+		assert(current->right_node->left_node == NULL);
+		assert(current->right_node->right_node == NULL);
+		count ++;
+	}
+
+	parser_print_program(parser);
+	parser_free_parser(parser);
+
+	printf("Let test passed.\n");
+}
+
+int main() {
+	parser_test_return();
+	parser_test_let();
+	//char * input = "let x = 10;\n"
+	//"let unga = bunga;\n";
+
 }
 
