@@ -26,6 +26,33 @@ typedef struct tokenized_program {
 	int read_position ;
 } tokenized_program;
 
+typedef struct ast_node {
+	token * lexer_token; //this contains the type info
+	struct ast_node * left_node;
+	struct ast_node * right_node;
+	void * value_pointer;
+} ast_node;
+
+typedef struct parser {
+	tokenized_program * program;
+	int token_read_index;
+	ast_node ** expressions;
+	int current_expression; 
+	int number_of_expression;
+} parser;
+
+typedef struct parse_error_info {
+	char * error_message;
+} parse_error_info;
+
+void parser_free_parser(parser * parser);
+parser * parser_init(char * input, int expected_token_count); 
+void parser_print_program(parser * parser);
+void parser_parse_program(parser * parser);
+
+void parser_test_return();
+void parser_test_let();
+
 tokenized_program * tokenizer_init(char * input_program, int approximate_token_count);
 void tokenizer_tokenize_program(tokenized_program * program);
 void tokenizer_check_program(tokenized_program * program);

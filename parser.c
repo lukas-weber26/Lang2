@@ -1,37 +1,14 @@
 #include "common.h"
-#include <stdio.h>
 
-typedef struct ast_node {
-	token * lexer_token; //this contains the type info
-	struct ast_node * left_node;
-	struct ast_node * right_node;
-	void * value_pointer;
-} ast_node;
-
-typedef struct parser {
-	tokenized_program * program;
-	int token_read_index;
-	ast_node ** expressions;
-	int current_expression; 
-	int number_of_expression;
-} parser;
-
-typedef struct parse_error_info {
-	char * error_message;
-} parse_error_info;
-
-void parser_parse_tokens(parser * parser);
-void parser_free_parser(parser * parser);
-void parser_free_ast(ast_node * ast_node);
 ast_node * parser_parse_token(parser * parser);
-parser * parser_init(char * input, int expected_token_count); 
+void parser_free_ast(ast_node * ast_node);
 void parser_print_node_and_children(ast_node * ast_node, int depth);
 void print_depth(int depth);
-void parser_print_program(parser * parser);
 ast_node * parser_parse_let(parser * parser);
 ast_node * parser_parse_return(parser * parser);
 ast_node * new_generic_node();
 int token_token_is_gramar(token * token);
+
 //expected expressions
 token * create_branch_token(); //used parsing if statements 
 ast_node * parse_let_token(parser * parser);
@@ -39,6 +16,7 @@ ast_node * parse_return_token(parser * parser);
 ast_node * parser_parse_infix(parser * parser);  //this thing needs some kind of prescedence? 
 ast_node * parser_parse_prefix(parser * parser); //this thing needs some kind of prescedence?
 ast_node * parser_parse_if(parser * parser); //this thing needs some kind of prescedence?
+void parser_parse_tokens(parser * parser);
 
 //how to handle if? If node has 2 child expressions. left is the condition. Right is a BRANCH node (this is basically a dummy node which has a left and right expression. During eval, the if is replaced by either the left or right child of the branch node.
 
@@ -240,103 +218,30 @@ void parser_parse_program(parser * parser) {
 }
 
 void parser_free_ast(ast_node * ast_node) {
-
 	if (ast_node->value_pointer != NULL) {
 		free(ast_node->value_pointer); //danger danger... this may become insufficient
 	}
-
 	if (ast_node->left_node != NULL) {
 		parser_free_ast(ast_node->left_node);
 	}
-
 	if (ast_node->right_node != NULL) {
 		parser_free_ast(ast_node->right_node);
 	}
-
 	free(ast_node);
 }
 
 void parser_free_parser(parser * parser) {
 	tokenizer_delete_program(parser->program);
-	
 	int count = 0;
 	while(parser->number_of_expression > count) {
 		parser_free_ast(parser->expressions[count]);
 		count ++;
 	}
-	
 	free(parser->expressions);
 	free(parser);
 }
 
-//a couple of tests for parsing let and return would be good.
-void parser_test_return() {
-	printf("Starting return test.\n");
 
-	char * input = "return 10;\n"
-	"return x;\n"
-	"return y;\n";
-
-	parser * parser = parser_init(input, 10);
-	parser_parse_program(parser);	
-
-	token_type types [] = {INT, IDENTIFIER, IDENTIFIER};
-
-	//run through everything, assert things
-	assert(parser->number_of_expression == 3);
-	int count = 0;
-
-	while(parser->number_of_expression > count) {
-		ast_node * current = parser->expressions[count];
-		assert(current->lexer_token->type == RETURN);
-		assert(current->right_node == NULL);	
-		assert(current->left_node->lexer_token->type == types[count]);
-		assert(current->left_node->left_node == NULL);
-		assert(current->left_node->right_node == NULL);
-		count ++;
-	}
-
-	parser_print_program(parser);
-	parser_free_parser(parser);
-
-	printf("Return test passed.\n");
-}
-
-void parser_test_let() {
-	printf("Starting let test.\n");
-
-	char * input = "let x = 10;\n"
-	"let boing = doing;\n"
-	"let bingus = 4;\n";
-
-	parser * parser = parser_init(input, 10);
-	parser_parse_program(parser);	
-
-	token_type types[] = {INT, IDENTIFIER, INT};
-
-	//run through everything, assert things
-	assert(parser->number_of_expression == 3);
-	int count = 0;
-
-	while(parser->number_of_expression > count) {
-		ast_node * current = parser->expressions[count];
-		assert(current->lexer_token->type == LET);
-		
-		assert(current->left_node->lexer_token->type == IDENTIFIER);
-		assert(current->left_node->left_node == NULL);
-		assert(current->left_node->right_node == NULL);
-
-		assert(current->right_node->lexer_token->type == types[count]);
-		assert(current->right_node->left_node == NULL);
-		assert(current->right_node->right_node == NULL);
-		count ++;
-	}
-
-	parser_print_program(parser);
-	parser_free_parser(parser);
-
-	printf("Let test passed.\n");
-}
 
 int main() {
 	parser_test_return();
