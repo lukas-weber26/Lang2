@@ -150,13 +150,11 @@ ast_node * parser_parse_token(parser * parser) {
 		default:
 			if (current_token->type == IDENTIFIER || current_token->type == INT) {
 				if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index+1]) != -1) {
-					printf("Parsing infix.\n");
 					ast_node * new_left_node = new_generic_node();
 					new_left_node->lexer_token = current_token;
 					parser->token_read_index ++;
-					parser_parse_infix_expression(parser,new_left_node);
+					return parser_parse_infix_expression(parser,new_left_node); 
 				} else { 
-					printf("Parsing standalone.\n");
 					ast_node * new_node = new_generic_node();
 					new_node ->lexer_token = current_token;
 					parser->token_read_index ++;
@@ -351,8 +349,8 @@ ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node) 
 }
 
 int main() {
-	//parser_test_return();
-	//parser_test_let();
+	parser_test_return();
+	parser_test_let();
 	parser_test_math();
 
 }
