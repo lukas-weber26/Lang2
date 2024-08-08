@@ -81,11 +81,46 @@ void parser_test_math() {
 	parser_parse_program(parser);	
 
 	assert(parser->number_of_expression == 4);
-	int count = 0;
 
-	while(parser->number_of_expression > count) {
-		//need a good way of comparing this.
-	}
+	//unfortunately, this mess is best tested manually
+	ast_node * first = parser->expressions[0];
+	assert(first->lexer_token->type == ADD);
+	assert(first->left_node->lexer_token->type == MULTIPLY);
+	assert(first->left_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(strcmp(first->left_node->left_node->lexer_token->token_string, "x") == 0);
+	assert(first->left_node->right_node->lexer_token->type == INT);
+	assert(strcmp(first->left_node->right_node->lexer_token->token_string, "10") == 0);
+	assert(first->right_node->lexer_token->type == INT);
+	assert(strcmp(first->right_node->lexer_token->token_string, "5") ==0);
+	
+	ast_node * second = parser->expressions[1];
+	assert(second->lexer_token->type == ADD);
+	assert(second->left_node->lexer_token->type == IDENTIFIER);
+	assert(second->right_node->lexer_token->type == MULTIPLY);
+	assert(second->right_node->left_node->lexer_token->type == INT);
+	assert(strcmp(second->right_node->left_node->lexer_token->token_string, "10") == 0);
+	assert(second->right_node->right_node->lexer_token->type == INT);
+	assert(strcmp(second->right_node->right_node->lexer_token->token_string, "5") == 0);
+	
+	ast_node * third = parser->expressions[2];
+	assert(third->lexer_token->type == ADD);
+	assert(third->left_node->lexer_token->type == IDENTIFIER);
+	assert(third->right_node->lexer_token->type == ADD);
+	assert(third->right_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(third->right_node->right_node->lexer_token->type == ADD);
+	assert(third->right_node->right_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(third->right_node->right_node->right_node->lexer_token->type == IDENTIFIER);
+
+	ast_node * fourth = parser->expressions[3];
+	assert(fourth->lexer_token->type == ADD);
+	assert(fourth->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->lexer_token->type == ADD);
+	assert(fourth->right_node->left_node->lexer_token->type == MULTIPLY);
+	assert(fourth->right_node->left_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->left_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->right_node->lexer_token->type == MULTIPLY);
+	assert(fourth->right_node->right_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->right_node->right_node->lexer_token->type == IDENTIFIER);
 
 	parser_print_program(parser);
 	parser_free_parser(parser);
