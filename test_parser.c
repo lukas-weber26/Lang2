@@ -68,3 +68,27 @@ void parser_test_let() {
 
 	printf("Let test passed.\n");
 }
+
+void parser_test_math() {
+	printf("Starting math test.\n");
+
+	char * input = "x * 10 + 5;\n"
+	"x + 10 * 5;\n"
+	"a + b + c + d;\n"
+	"a + b * c + d * e;\n";
+
+	parser * parser = parser_init(input, 10);
+	parser_parse_program(parser);	
+
+	assert(parser->number_of_expression == 4);
+	int count = 0;
+
+	while(parser->number_of_expression > count) {
+		//need a good way of comparing this.
+	}
+
+	parser_print_program(parser);
+	parser_free_parser(parser);
+
+	printf("Math test passed.\n");
+}

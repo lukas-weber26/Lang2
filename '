@@ -8,18 +8,16 @@ ast_node * parser_parse_let(parser * parser);
 ast_node * parser_parse_return(parser * parser);
 ast_node * new_generic_node();
 int token_token_is_gramar(token * token);
-int parser_get_operator_presedence(token * operator_token);
-int parser_get_next_operator_prescedence(parser * parser);
 
 //expected expressions
 token * create_branch_token(); //used parsing if statements 
 ast_node * parse_let_token(parser * parser);
 ast_node * parse_return_token(parser * parser);
+ast_node * parser_parse_infix(parser * parser);  //this thing needs some kind of prescedence? 
 ast_node * parser_parse_prefix(parser * parser); //this thing needs some kind of prescedence?
 ast_node * parser_parse_if(parser * parser); //this thing needs some kind of prescedence?
 void parser_parse_tokens(parser * parser);
 
-ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node);
 //how to handle if? If node has 2 child expressions. left is the condition. Right is a BRANCH node (this is basically a dummy node which has a left and right expression. During eval, the if is replaced by either the left or right child of the branch node.
 
 parser * parser_init(char * input, int approximate_token_count) {
@@ -88,7 +86,7 @@ ast_node * parser_parse_let(parser * parser) {
 		new_let_node->lexer_token = let;
 		new_let_node->left_node = new_generic_node();
 		new_let_node->left_node->lexer_token = symbol;
-		parser->token_read_index += 4; //next tokenizer pass should be starting at the expression
+		parser->token_read_index += 3; //next tokenizer pass should be starting at the expression
 
 		//what I should do 
 		//new_let_node->right_node = parser_parse_token(parser); //for now I will not attach values to the nodes.
@@ -133,6 +131,47 @@ ast_node * parser_parse_return(parser * parser) {
 	}
 }
 
+//start off expecting only infix
+//for now, this thing will call itself and nothing else 
+ast_node * parser_parse_infix_expression(parser * parser) {
+	int parser_read_index = parser->token_read_index;
+	token ** token_array_pointer = parser->program->tokens;	
+
+	//check the requirements for the let expression
+	token * value_token = token_array_pointer[parser_read_index];
+	token * operator_token = token_array_pointer[parser_read_index + 1];
+	token * expression_token = token_array_pointer[parser_read_index + 2];
+
+	//check if the expression is valid?.
+
+	//no matter what, you will need your value attached to your operator
+	ast_node * value_node = new_generic_node();
+	ast_node * operator_node = new_generic_node();
+
+	value_node->lexer_token = value_token;
+	operator_node->lexer_token = operator_token;
+	operator_node->left_node = value_node;
+
+	//find the next operator
+
+	if (0) { //expression done
+		ast_node * expression_node = new_generic_node();
+		expression_node->lexer_token = expression_token;
+		operator_node->right_node = expression_node;
+		parser->token_read_index += 3;
+		return operator_node;
+	} else if (1) {//lower priority
+		ast_node * expression_node = new_generic_node();
+		expression_node->lexer_token = expression_token;
+		parser->token_read_index += 3;
+		parser_parse_infix_expression(parser);
+
+	} else //next is higher priority {
+		printf("oof")	;
+	}
+
+}
+
 ast_node * parser_parse_token(parser * parser) {
 	//typedef enum {
 //IDENTIFIER, FUNCTION, ADD, SUBTRACT,COMPARE, GT, LT, GTE, LTE, OR, AND, TRUE, FALSE, IF, ELSE, EQUAL,NOT_EQUAL,DIVIDE,MULTIPLY, BANG, ILLIGAL,SEMICOLON,LPAREN, RPAREN, LBRACE,RBRACE,END, COMMA, BRANCH 
@@ -145,27 +184,12 @@ ast_node * parser_parse_token(parser * parser) {
 		case RETURN:
 			return parser_parse_return(parser);
 		case SEMICOLON: 
+			//somehow semicolon needs to just let you know that everything is done.
 			parser->token_read_index++;
 			return NULL;
 		default:
-			if (current_token->type == IDENTIFIER || current_token->type == INT) {
-				if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index+1]) != -1) {
-					printf("Parsing infix.\n");
-					ast_node * new_left_node = new_generic_node();
-					new_left_node->lexer_token = current_token;
-					parser->token_read_index ++;
-					parser_parse_infix_expression(parser,new_left_node);
-				} else { 
-					printf("Parsing standalone.\n");
-					ast_node * new_node = new_generic_node();
-					new_node ->lexer_token = current_token;
-					parser->token_read_index ++;
-					return new_node;
-				}
-			} else {
-				parser->token_read_index++; //these ++ expressions are citical, without them the tokenizer can get stuck 
-				return NULL;
-			}
+			parser->token_read_index++; //these ++ expressions are citical, without them the tokenizer can get stuck 
+			return NULL;
 
 		//some more things could go here. Ie an algebraic case, a semicolon case? Idk.
 	}
@@ -204,19 +228,6 @@ void parser_print_node_and_children(ast_node * ast_node, int depth) {
 			break;
 		case INT:
 			printf("INTEGER: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			break;
-		case ADD:
-			//check if this is an expression
-			printf("ADD: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			depth ++;
-			parser_print_node_and_children(ast_node->left_node, depth);
-			parser_print_node_and_children(ast_node->right_node, depth);
-			break;
-		case MULTIPLY:
-			printf("MULIPLY: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			depth ++;
-			parser_print_node_and_children(ast_node->left_node, depth);
-			parser_print_node_and_children(ast_node->right_node, depth);
 			break;
 		default:
 			return;	
@@ -271,89 +282,13 @@ void parser_free_parser(parser * parser) {
 	free(parser);
 }
 
-int parser_get_operator_presedence(token * operator_token) {
-switch (operator_token->type) {
-		case DIVIDE:
-			return 6;
-		case MULTIPLY:
-			return 5;
-		case ADD:
-			return 4;
-		case SUBTRACT: 
-			return 3;
-		default:
-			return -1;
-	}
-}
 
-int parser_get_next_operator_prescedence(parser * parser) {
-	int parser_read_index = parser->token_read_index;
-	token ** token_array_pointer = parser->program->tokens;	
-	token * current_token = token_array_pointer[parser_read_index+1];
-	token * next_token = token_array_pointer[parser_read_index+1];
-	token * potential_operator_token = token_array_pointer[parser_read_index+2];
-
-	assert(current_token ->type != SEMICOLON);	
-	
-	if (next_token->type == SEMICOLON) {
-		return -1;
-	} 
-
-	return parser_get_operator_presedence(potential_operator_token);
-	
-}
-
-//start off expecting only infix
-//for now, this thing will call itself and nothing else 
-ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node) {
-	int parser_read_index = parser->token_read_index;
-	token ** token_array_pointer = parser->program->tokens;	
-
-	//check the requirements for the let expression
-	token * operator_token = token_array_pointer[parser_read_index];
-	token * expression_token = token_array_pointer[parser_read_index + 1];
-
-	//check if the expression is valid?.
-
-	//no matter what, you will need your value attached to your operator
-	ast_node * operator_node = new_generic_node();
-	
-	operator_node->lexer_token = operator_token;
-	operator_node->left_node = left_node;
-
-	//find the next operator
-	int current_op_presedence= parser_get_operator_presedence(operator_token);
-	int next_op_prescedence = parser_get_next_operator_prescedence(parser);
-
-	//making anything non-algebraic return without recursive call might actually be really good. This could just trigger the 
-	//more general parser to let it figure out what to do with the next thing 
-	//note, this is not 100% thought out
-	if (next_op_prescedence == -1) { //expression done
-		ast_node * expression_node = new_generic_node();
-		expression_node->lexer_token = expression_token;
-		operator_node->right_node = expression_node;
-		parser->token_read_index += 2;
-		return operator_node;
-	} else if (next_op_prescedence < current_op_presedence) {//lower priority
-		ast_node * expression_node = new_generic_node();
-		expression_node->lexer_token = expression_token;
-		operator_node->right_node = expression_node;
-		parser->token_read_index += 2;
-		return parser_parse_infix_expression(parser, operator_node);
-	} else {//next is higher priority {
-		ast_node * new_left_node = new_generic_node();
-		new_left_node->lexer_token = token_array_pointer[parser_read_index + 1];
-		parser->token_read_index += 2;
-		operator_node->right_node = parser_parse_infix_expression(parser, new_left_node);
-		return operator_node;
-	}
-
-}
 
 int main() {
-	//parser_test_return();
-	//parser_test_let();
-	parser_test_math();
+	parser_test_return();
+	parser_test_let();
+	//char * input = "let x = 10;\n"
+	//"let unga = bunga;\n";
 
 }
 
