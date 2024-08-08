@@ -53,6 +53,8 @@ token * create_branch_token() {
 }
 
 //could have more functions like this. Think "is valid infix, is valid postfix, etc."
+//almost certainly requires greater nuance
+//do not really thing that parentheses should be in here
 int token_token_is_gramar(token * token) {
 	token_type type = token->type;
 	if ((type == COMMA) ||(type == END) ||(type == LBRACE) ||(type == RBRACE) ||(type == LPAREN) ||(type == RPAREN) ||(type == EQUAL) ||(type == NOT_EQUAL) || (type == SEMICOLON)) {
@@ -86,18 +88,13 @@ ast_node * parser_parse_let(parser * parser) {
 	if (symbol->type == IDENTIFIER && equals->type == EQUAL && !token_token_is_gramar(expression)) {
 		ast_node * new_let_node = new_generic_node();
 		new_let_node->lexer_token = let;
+	
 		new_let_node->left_node = new_generic_node();
 		new_let_node->left_node->lexer_token = symbol;
-		parser->token_read_index += 4; //next tokenizer pass should be starting at the expression
 
-		//what I should do 
-		//new_let_node->right_node = parser_parse_token(parser); //for now I will not attach values to the nodes.
+		parser->token_read_index += 3;
+		new_let_node->right_node = parser_parse_token(parser); //for now I will not attach values to the nodes.
 
-		//what I will do for now. //IF YOU CHANGE THIS DECREASE THE INCREMENT above
-		new_let_node->right_node = new_generic_node();
-		new_let_node->right_node->lexer_token = expression;
-
-		//experimenting with an int node reql quick.
 		return new_let_node;
 
 	} else {
@@ -120,9 +117,12 @@ ast_node * parser_parse_return(parser * parser) {
 	if (!token_token_is_gramar(return_value)) {
 		ast_node * new_return_node = new_generic_node();
 		new_return_node ->lexer_token = return_symbol;
-		parser->token_read_index += 2; //decrease for acutal use
-		new_return_node->left_node= new_generic_node();
-		new_return_node->left_node->lexer_token = return_value;
+
+		parser->token_read_index += 1; //decrease for acutal use (used to be 2)
+		new_return_node->left_node= parser_parse_token(parser); //for now I will not attach values to the nodes.
+		//
+		//new_return_node->left_node= new_generic_node();
+		//new_return_node->left_node->lexer_token = return_value;
 		//new_return_node -> left_node = parser_parse_token(parser); 
 		return new_return_node;
 
@@ -176,6 +176,14 @@ void print_depth(int depth) {
 	}
 }
 
+void print_operator(ast_node * ast_node, int depth, char * operator_name) {
+		token * current = ast_node->lexer_token;
+		printf("%s: %s (%d,%d)\n", operator_name,current->token_string, current->line, current->position);
+		depth ++;
+		parser_print_node_and_children(ast_node->left_node, depth);
+		parser_print_node_and_children(ast_node->right_node, depth);
+}
+
 void parser_print_node_and_children(ast_node * ast_node, int depth) {
 	
 	if (!ast_node) {
@@ -204,17 +212,43 @@ void parser_print_node_and_children(ast_node * ast_node, int depth) {
 			printf("INTEGER: %s (%d,%d)\n", current->token_string, current->line, current->position);
 			break;
 		case ADD:
-			//check if this is an expression
-			printf("ADD: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			depth ++;
-			parser_print_node_and_children(ast_node->left_node, depth);
-			parser_print_node_and_children(ast_node->right_node, depth);
+			print_operator(ast_node, depth, "ADD");
+			break;
+		case SUBTRACT:
+			print_operator(ast_node, depth, "SUBTRACT");
+			break;
+		case COMPARE:
+			print_operator(ast_node, depth, "COMPARE");
+			break;
+		case GT:
+			print_operator(ast_node, depth, "GT");
+			break;
+		case LT:
+			print_operator(ast_node, depth, "LT");
+			break;
+		case GTE:
+			print_operator(ast_node, depth, "GTE");
+			break;
+		case LTE:
+			print_operator(ast_node, depth, "LTE");
+			break;
+		case OR:
+			print_operator(ast_node, depth, "OR");
+			break;
+		case AND:
+			print_operator(ast_node, depth, "AND");
+			break;
+		case EQUAL:
+			print_operator(ast_node, depth, "EQUAL");
+			break;
+		case NOT_EQUAL:
+			print_operator(ast_node, depth, "NOT EQUAL");
+			break;
+		case DIVIDE:
+			print_operator(ast_node, depth, "DIVIDE");
 			break;
 		case MULTIPLY:
-			printf("MULIPLY: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			depth ++;
-			parser_print_node_and_children(ast_node->left_node, depth);
-			parser_print_node_and_children(ast_node->right_node, depth);
+			print_operator(ast_node, depth, "MULTIPLY");
 			break;
 		default:
 			return;	
@@ -271,7 +305,7 @@ void parser_free_parser(parser * parser) {
 
 int parser_get_operator_presedence(token * operator_token) {
 switch (operator_token->type) {
-		case DIVIDE:
+		case DIVIDE: //BEDMAS operators
 			return 6;
 		case MULTIPLY:
 			return 5;
@@ -279,6 +313,24 @@ switch (operator_token->type) {
 			return 4;
 		case SUBTRACT: 
 			return 3;
+		case COMPARE:	//low prescedence
+			return 2;
+		case NOT_EQUAL:
+			return 2;
+		case GT:
+			return 2;
+		case LT:
+			return 2;
+		case GTE:
+			return 2;
+		case LTE:	//super low presedence
+			return 2; 
+		case AND:
+			return 1;
+		case OR:
+			return 1;
+		case EQUAL: //assignment is the lowest prescedence 
+			return 0;
 		default:
 			return -1;
 	}
@@ -349,9 +401,12 @@ ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node) 
 }
 
 int main() {
+	//goal: switch return and let to use real switch statement
 	parser_test_return();
 	parser_test_let();
 	parser_test_math();
+	parser_test_math_advanced();
+	//parser_test_parentheses();
 
 }
 

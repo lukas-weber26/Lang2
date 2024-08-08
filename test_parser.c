@@ -30,7 +30,7 @@ void parser_test_return() {
 	parser_print_program(parser);
 	parser_free_parser(parser);
 
-	printf("Return test passed.\n");
+	printf("Return test passed.\n\n");
 }
 
 void parser_test_let() {
@@ -66,7 +66,7 @@ void parser_test_let() {
 	parser_print_program(parser);
 	parser_free_parser(parser);
 
-	printf("Let test passed.\n");
+	printf("Let test passed.\n\n");
 }
 
 void parser_test_math() {
@@ -125,5 +125,55 @@ void parser_test_math() {
 	parser_print_program(parser);
 	parser_free_parser(parser);
 
-	printf("Math test passed.\n");
+	printf("Math test passed.\n\n");
 }
+
+void parser_test_math_advanced() {
+	printf("Starting advanced math test.\n");
+
+	char * input = "x == 10 * b + 5;\n"
+	"x = 2 == x3;\n"
+	"x == 2 >= x3;\n"
+	"x = 1 | a;\n";
+
+	parser * parser = parser_init(input, 10);
+	parser_parse_program(parser);	
+
+	assert(parser->number_of_expression == 4);
+
+	ast_node * first = parser->expressions[0];
+	assert(first->lexer_token->type == COMPARE);
+	assert(first->left_node->lexer_token->type == IDENTIFIER);
+	assert(first->right_node->lexer_token->type == ADD);
+	assert(first->right_node->left_node->lexer_token->type == MULTIPLY);
+	assert(first->right_node->left_node->left_node->lexer_token->type == INT);
+	assert(first->right_node->left_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(first->right_node->right_node->lexer_token->type == INT);
+	
+	ast_node * second = parser->expressions[1];
+	assert(second->lexer_token->type == EQUAL);
+	assert(second->left_node->lexer_token->type == IDENTIFIER);
+	assert(second->right_node->lexer_token->type == COMPARE);
+	assert(second->right_node->left_node->lexer_token->type == INT);
+	assert(second->right_node->right_node->lexer_token->type == IDENTIFIER);
+
+	ast_node * third = parser->expressions[2];
+	assert(third->lexer_token->type == COMPARE);
+	assert(third->left_node->lexer_token->type == IDENTIFIER);
+	assert(third->right_node->lexer_token->type == GTE);
+	assert(third->right_node->left_node->lexer_token->type ==  INT);
+	assert(third->right_node->right_node->lexer_token->type == IDENTIFIER);
+
+	ast_node * fourth = parser->expressions[3];
+	assert(fourth->lexer_token->type == EQUAL);
+	assert(fourth->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->lexer_token->type ==	OR);
+	assert(fourth->right_node->left_node->lexer_token->type == INT);
+	assert(fourth->right_node->right_node->lexer_token->type == IDENTIFIER);
+
+	parser_print_program(parser);
+	parser_free_parser(parser);
+
+	printf("Advanced math test passed.\n\n");
+}
+

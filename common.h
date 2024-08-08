@@ -53,6 +53,7 @@ void parser_parse_program(parser * parser);
 void parser_test_return();
 void parser_test_let();
 void parser_test_math();
+void parser_test_math_advanced();
 
 tokenized_program * tokenizer_init(char * input_program, int approximate_token_count);
 void tokenizer_tokenize_program(tokenized_program * program);
