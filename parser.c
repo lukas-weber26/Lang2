@@ -2,25 +2,31 @@
 
 ast_node * parser_parse_token(parser * parser);
 void parser_free_ast(ast_node * ast_node);
-void parser_print_node_and_children(ast_node * ast_node, int depth);
-void print_depth(int depth);
 ast_node * parser_parse_let(parser * parser);
 ast_node * parser_parse_return(parser * parser);
 ast_node * new_generic_node();
 int token_token_is_gramar(token * token);
 int parser_get_operator_presedence(token * operator_token);
 int parser_get_next_operator_prescedence(parser * parser);
+int is_valid_infix_operator(token * token);
 
 //expected expressions
 token * create_branch_token(); //used parsing if statements 
 ast_node * parse_let_token(parser * parser);
 ast_node * parse_return_token(parser * parser);
-ast_node * parser_parse_prefix(parser * parser); //this thing needs some kind of prescedence?
 ast_node * parser_parse_if(parser * parser); //this thing needs some kind of prescedence?
 void parser_parse_tokens(parser * parser);
 
 ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node);
-//how to handle if? If node has 2 child expressions. left is the condition. Right is a BRANCH node (this is basically a dummy node which has a left and right expression. During eval, the if is replaced by either the left or right child of the branch node.
+
+int is_valid_infix_operator(token * token) {
+	token_type type = token->type; 
+	if (type == SUBTRACT) {
+		return 1;
+	}
+	return 0;
+}
+
 
 parser * parser_init(char * input, int approximate_token_count) {
 	tokenized_program * program = tokenizer_init(input, approximate_token_count);
@@ -133,6 +139,41 @@ ast_node * parser_parse_return(parser * parser) {
 	}
 }
 
+ast_node * parser_parse_prefix_expression(parser * parser) {
+	ast_node * new_node = new_generic_node();
+	new_node ->lexer_token = parser->program->tokens[parser->token_read_index];
+	parser->token_read_index += 1;
+	
+	//need this thing to not get roasted
+	//determine next token 
+	token * infix_data = parser->program->tokens[parser->token_read_index];
+
+	if (infix_data->type == INT || infix_data->type == IDENTIFIER) {
+		ast_node * infix_data_node = new_generic_node();
+		infix_data_node ->lexer_token = parser->program->tokens[parser->token_read_index];
+		new_node->left_node = infix_data_node;
+		parser->token_read_index ++;
+	
+		//one of two things could happen: next item is an operator next item is something else  ---------------------- ooof 
+		if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index]) != -1) {
+			return parser_parse_infix_expression(parser, new_node);
+		} else {
+			return new_node;
+		}
+
+		//return new_node;
+	} else if (infix_data->type == LPAREN) {
+		printf("Dont support parentheses yet.\n");
+		exit(0);
+	} else {printf("Invalid prefix expression detected at line %d, position %d.\n", infix_data->line, infix_data->position);
+		printf("Expected type INT or IDENTIFIER, received %s...\n", infix_data->token_string);
+		exit(0);
+	}
+
+	new_node -> left_node = parser_parse_token(parser); 
+	return new_node;
+}
+
 ast_node * parser_parse_token(parser * parser) {
 	//typedef enum {
 //IDENTIFIER, FUNCTION, ADD, SUBTRACT,COMPARE, GT, LT, GTE, LTE, OR, AND, TRUE, FALSE, IF, ELSE, EQUAL,NOT_EQUAL,DIVIDE,MULTIPLY, BANG, ILLIGAL,SEMICOLON,LPAREN, RPAREN, LBRACE,RBRACE,END, COMMA, BRANCH 
@@ -148,7 +189,9 @@ ast_node * parser_parse_token(parser * parser) {
 			parser->token_read_index++;
 			return NULL;
 		default:
-			if (current_token->type == IDENTIFIER || current_token->type == INT) {
+			if (is_valid_infix_operator(current_token)) {
+				return parser_parse_prefix_expression(parser);
+			} else if (current_token->type == IDENTIFIER || current_token->type == INT) {
 				if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index+1]) != -1) {
 					ast_node * new_left_node = new_generic_node();
 					new_left_node->lexer_token = current_token;
@@ -168,102 +211,6 @@ ast_node * parser_parse_token(parser * parser) {
 		//some more things could go here. Ie an algebraic case, a semicolon case? Idk.
 	}
 }
-
-void print_depth(int depth) {
-	while (depth > 0) {
-		printf("\t");
-		depth--;
-	}
-}
-
-void print_operator(ast_node * ast_node, int depth, char * operator_name) {
-		token * current = ast_node->lexer_token;
-		printf("%s: %s (%d,%d)\n", operator_name,current->token_string, current->line, current->position);
-		depth ++;
-		parser_print_node_and_children(ast_node->left_node, depth);
-		parser_print_node_and_children(ast_node->right_node, depth);
-}
-
-void parser_print_node_and_children(ast_node * ast_node, int depth) {
-	
-	if (!ast_node) {
-		return;
-	}
-
-	print_depth(depth);
-	token * current = ast_node->lexer_token;
-
-	switch (current->type) {
-		case LET:
-			printf("LET: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			depth ++;
-			parser_print_node_and_children(ast_node->left_node, depth);
-			parser_print_node_and_children(ast_node->right_node, depth);
-			break;
-		case RETURN:
-			printf("RETURN: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			depth ++;
-			parser_print_node_and_children(ast_node->left_node, depth);
-			break;
-		case IDENTIFIER:
-			printf("IDENTIFIER: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			break;
-		case INT:
-			printf("INTEGER: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			break;
-		case ADD:
-			print_operator(ast_node, depth, "ADD");
-			break;
-		case SUBTRACT:
-			print_operator(ast_node, depth, "SUBTRACT");
-			break;
-		case COMPARE:
-			print_operator(ast_node, depth, "COMPARE");
-			break;
-		case GT:
-			print_operator(ast_node, depth, "GT");
-			break;
-		case LT:
-			print_operator(ast_node, depth, "LT");
-			break;
-		case GTE:
-			print_operator(ast_node, depth, "GTE");
-			break;
-		case LTE:
-			print_operator(ast_node, depth, "LTE");
-			break;
-		case OR:
-			print_operator(ast_node, depth, "OR");
-			break;
-		case AND:
-			print_operator(ast_node, depth, "AND");
-			break;
-		case EQUAL:
-			print_operator(ast_node, depth, "EQUAL");
-			break;
-		case NOT_EQUAL:
-			print_operator(ast_node, depth, "NOT EQUAL");
-			break;
-		case DIVIDE:
-			print_operator(ast_node, depth, "DIVIDE");
-			break;
-		case MULTIPLY:
-			print_operator(ast_node, depth, "MULTIPLY");
-			break;
-		default:
-			return;	
-	}
-}
-
-void parser_print_program(parser * parser) {
-	printf("Printing AST. Expecting %d expressions.\n", parser->number_of_expression);
-	int count = 0;
-	while(parser->number_of_expression > count) {
-		parser_print_node_and_children(parser->expressions[count], 0);
-		count ++;
-	}
-}
-
 
 void parser_parse_program(parser * parser) {
 
@@ -350,7 +297,6 @@ int parser_get_next_operator_prescedence(parser * parser) {
 	} 
 
 	return parser_get_operator_presedence(potential_operator_token);
-	
 }
 
 //start off expecting only infix
@@ -372,30 +318,33 @@ ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node) 
 	operator_node->left_node = left_node;
 
 	//find the next operator
-	int current_op_presedence= parser_get_operator_presedence(operator_token);
-	int next_op_prescedence = parser_get_next_operator_prescedence(parser);
+	if (is_valid_infix_operator(expression_token)) {
+		parser->token_read_index += 1;
+		operator_node -> right_node = parser_parse_prefix_expression(parser);
+		return operator_node;
+	} else {
+		int current_op_presedence= parser_get_operator_presedence(operator_token);
+		int next_op_prescedence = parser_get_next_operator_prescedence(parser);
 
-	//making anything non-algebraic return without recursive call might actually be really good. This could just trigger the 
-	//more general parser to let it figure out what to do with the next thing 
-	//note, this is not 100% thought out
-	if (next_op_prescedence == -1) { //expression done
-		ast_node * expression_node = new_generic_node();
-		expression_node->lexer_token = expression_token;
-		operator_node->right_node = expression_node;
-		parser->token_read_index += 2;
-		return operator_node;
-	} else if (next_op_prescedence < current_op_presedence) {//lower priority
-		ast_node * expression_node = new_generic_node();
-		expression_node->lexer_token = expression_token;
-		operator_node->right_node = expression_node;
-		parser->token_read_index += 2;
-		return parser_parse_infix_expression(parser, operator_node);
-	} else {//next is higher priority {
-		ast_node * new_left_node = new_generic_node();
-		new_left_node->lexer_token = token_array_pointer[parser_read_index + 1];
-		parser->token_read_index += 2;
-		operator_node->right_node = parser_parse_infix_expression(parser, new_left_node);
-		return operator_node;
+		if (next_op_prescedence == -1) { //expression done
+			ast_node * expression_node = new_generic_node();
+			expression_node->lexer_token = expression_token;
+			operator_node->right_node = expression_node;
+			parser->token_read_index += 2;
+			return operator_node;
+		} else if (next_op_prescedence < current_op_presedence) {//lower priority
+			ast_node * expression_node = new_generic_node();
+			expression_node->lexer_token = expression_token;
+			operator_node->right_node = expression_node;
+			parser->token_read_index += 2;
+			return parser_parse_infix_expression(parser, operator_node);
+		} else {//next is higher priority {
+			ast_node * new_left_node = new_generic_node();
+			new_left_node->lexer_token = token_array_pointer[parser_read_index + 1];
+			parser->token_read_index += 2;
+			operator_node->right_node = parser_parse_infix_expression(parser, new_left_node);
+			return operator_node;
+		}
 	}
 
 }
@@ -406,7 +355,7 @@ int main() {
 	parser_test_let();
 	parser_test_math();
 	parser_test_math_advanced();
+	parser_test_prefix();
 	//parser_test_parentheses();
-
 }
 
