@@ -166,7 +166,7 @@ ast_node * parser_parse_token(parser * parser) {
 			return parser_handle_leading_paren(parser);
 		case RPAREN: //you are the problem
 			parser->token_read_index++;
-			return NULL;	
+			return NULL;//parser_parse_token(parser);	
 		default:
 			if (is_valid_infix_operator(current_token)) {
 				return parser_parse_prefix_expression(parser);
@@ -285,7 +285,7 @@ int main() {
 	//parser_test_let();
 	//parser_test_math();
 	//parser_test_math_advanced();
-	parser_test_prefix();
+	//parser_test_prefix();
 	parser_test_paren();
 }
 
