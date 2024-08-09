@@ -106,35 +106,46 @@ ast_node * parser_parse_return(parser * parser) {
 }
 
 ast_node * parser_parse_prefix_expression(parser * parser) {
-	ast_node * new_node = new_generic_node();
-	new_node ->lexer_token = parser->program->tokens[parser->token_read_index];
-	parser->token_read_index += 1;
-	
-	token * infix_data = parser->program->tokens[parser->token_read_index];
 
-	if (infix_data->type == INT || infix_data->type == IDENTIFIER) {
-		ast_node * infix_data_node = new_generic_node();
-		infix_data_node ->lexer_token = parser->program->tokens[parser->token_read_index];
-		new_node->left_node = infix_data_node;
+	token * current = parser->program->tokens[parser->token_read_index];
+	token * peek = parser->program->tokens[parser->token_read_index+1];
+
+	if (current->type == LPAREN) {
+		//this is almost certainly bad 	
 		parser->token_read_index ++;
-	
+		return parser_parse_token(parser); 
+
+	} else if (peek->type == INT || peek ->type == IDENTIFIER) {
+		ast_node * prefix_root_node = new_generic_node();
+		prefix_root_node -> lexer_token = current;
+
+		ast_node * prefix_leaf_node = new_generic_node();
+		prefix_leaf_node -> lexer_token = peek;
+
+		prefix_root_node -> left_node = prefix_leaf_node;
+		parser->token_read_index += 2;
+
 		if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index]) != -1) {
-			return parser_parse_infix_expression(parser, new_node);
+			return parser_parse_infix_expression(parser, prefix_root_node);
 		} else {
-			return new_node;
+			return prefix_root_node;
 		}
 
-	} else if (infix_data->type == LPAREN) {
-		parser->token_read_index ++;
-		return parser_parse_token(parser); //this seems suss!
-
-	} else {printf("Invalid prefix expression detected at line %d, position %d.\n", infix_data->line, infix_data->position);
-		printf("Expected type INT or IDENTIFIER, received %s...\n", infix_data->token_string);
+	} else {printf("Invalid prefix expression detected at line %d, position %d.\n", current->line, current->position);
+		printf("Expected type INT, IDENTIFIER or LPAREN, received %s...\n", peek->token_string);
 		exit(0);
 	}
 
-	new_node -> left_node = parser_parse_token(parser); 
-	return new_node;
+}
+
+ast_node * parser_handle_leading_paren(parser * parser) {
+	ast_node * infix_result = parser_parse_prefix_expression(parser);
+	parser->token_read_index+=1;
+	if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index]) != -1) {
+		return parser_parse_infix_expression(parser, infix_result);	
+	} else {
+		return infix_result;
+	}
 }
 
 ast_node * parser_parse_token(parser * parser) {
@@ -151,9 +162,11 @@ ast_node * parser_parse_token(parser * parser) {
 		case SEMICOLON: 
 			parser->token_read_index++;
 			return NULL;
-		case LPAREN:
+		case LPAREN: //this might actually brick a lot of things....
+			return parser_handle_leading_paren(parser);
+		case RPAREN: //you are the problem
 			parser->token_read_index++;
-			return NULL;
+			return NULL;	
 		default:
 			if (is_valid_infix_operator(current_token)) {
 				return parser_parse_prefix_expression(parser);
@@ -272,7 +285,7 @@ int main() {
 	//parser_test_let();
 	//parser_test_math();
 	//parser_test_math_advanced();
-	//parser_test_prefix();
+	parser_test_prefix();
 	parser_test_paren();
 }
 
