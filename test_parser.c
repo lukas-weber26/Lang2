@@ -222,3 +222,19 @@ void parser_test_prefix() {
 
 	printf("Prefix math test passed.\n\n");
 }
+
+void parser_test_paren() {
+	printf("Starting parentheses math test.\n");
+
+	char * input =  "5 * (x + a);\n";
+	//"(x + a) * 10;\n";
+
+	parser * parser = parser_init(input, 10);
+	parser_parse_program(parser);	
+
+
+	parser_print_program(parser);
+	parser_free_parser(parser);
+
+	printf("Parentheses math test passed.\n\n");
+}

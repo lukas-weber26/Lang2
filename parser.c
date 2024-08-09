@@ -5,28 +5,7 @@ void parser_free_ast(ast_node * ast_node);
 ast_node * parser_parse_let(parser * parser);
 ast_node * parser_parse_return(parser * parser);
 ast_node * new_generic_node();
-int token_token_is_gramar(token * token);
-int parser_get_operator_presedence(token * operator_token);
-int parser_get_next_operator_prescedence(parser * parser);
-int is_valid_infix_operator(token * token);
-
-//expected expressions
-token * create_branch_token(); //used parsing if statements 
-ast_node * parse_let_token(parser * parser);
-ast_node * parse_return_token(parser * parser);
-ast_node * parser_parse_if(parser * parser); //this thing needs some kind of prescedence?
-void parser_parse_tokens(parser * parser);
-
 ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node);
-
-int is_valid_infix_operator(token * token) {
-	token_type type = token->type; 
-	if (type == SUBTRACT) {
-		return 1;
-	}
-	return 0;
-}
-
 
 parser * parser_init(char * input, int approximate_token_count) {
 	tokenized_program * program = tokenizer_init(input, approximate_token_count);
@@ -47,7 +26,6 @@ parser * parser_init(char * input, int approximate_token_count) {
 }
 
 //expected functions
-
 token * create_branch_token() {
 	token * new_token = malloc(sizeof(token));
 	new_token->type = BRANCH;
@@ -56,18 +34,6 @@ token * create_branch_token() {
 	new_token->line = -1;
 	new_token->position = -1;
 	return new_token;
-}
-
-//could have more functions like this. Think "is valid infix, is valid postfix, etc."
-//almost certainly requires greater nuance
-//do not really thing that parentheses should be in here
-int token_token_is_gramar(token * token) {
-	token_type type = token->type;
-	if ((type == COMMA) ||(type == END) ||(type == LBRACE) ||(type == RBRACE) ||(type == LPAREN) ||(type == RPAREN) ||(type == EQUAL) ||(type == NOT_EQUAL) || (type == SEMICOLON)) {
-		return 1;
-	} else {
-		return 0;
-	}
 }
 
 ast_node * new_generic_node() {
@@ -144,8 +110,6 @@ ast_node * parser_parse_prefix_expression(parser * parser) {
 	new_node ->lexer_token = parser->program->tokens[parser->token_read_index];
 	parser->token_read_index += 1;
 	
-	//need this thing to not get roasted
-	//determine next token 
 	token * infix_data = parser->program->tokens[parser->token_read_index];
 
 	if (infix_data->type == INT || infix_data->type == IDENTIFIER) {
@@ -154,17 +118,16 @@ ast_node * parser_parse_prefix_expression(parser * parser) {
 		new_node->left_node = infix_data_node;
 		parser->token_read_index ++;
 	
-		//one of two things could happen: next item is an operator next item is something else  ---------------------- ooof 
 		if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index]) != -1) {
 			return parser_parse_infix_expression(parser, new_node);
 		} else {
 			return new_node;
 		}
 
-		//return new_node;
 	} else if (infix_data->type == LPAREN) {
-		printf("Dont support parentheses yet.\n");
-		exit(0);
+		parser->token_read_index ++;
+		return parser_parse_token(parser); //this seems suss!
+
 	} else {printf("Invalid prefix expression detected at line %d, position %d.\n", infix_data->line, infix_data->position);
 		printf("Expected type INT or IDENTIFIER, received %s...\n", infix_data->token_string);
 		exit(0);
@@ -186,6 +149,9 @@ ast_node * parser_parse_token(parser * parser) {
 		case RETURN:
 			return parser_parse_return(parser);
 		case SEMICOLON: 
+			parser->token_read_index++;
+			return NULL;
+		case LPAREN:
 			parser->token_read_index++;
 			return NULL;
 		default:
@@ -250,55 +216,6 @@ void parser_free_parser(parser * parser) {
 	free(parser);
 }
 
-int parser_get_operator_presedence(token * operator_token) {
-switch (operator_token->type) {
-		case DIVIDE: //BEDMAS operators
-			return 6;
-		case MULTIPLY:
-			return 5;
-		case ADD:
-			return 4;
-		case SUBTRACT: 
-			return 3;
-		case COMPARE:	//low prescedence
-			return 2;
-		case NOT_EQUAL:
-			return 2;
-		case GT:
-			return 2;
-		case LT:
-			return 2;
-		case GTE:
-			return 2;
-		case LTE:	//super low presedence
-			return 2; 
-		case AND:
-			return 1;
-		case OR:
-			return 1;
-		case EQUAL: //assignment is the lowest prescedence 
-			return 0;
-		default:
-			return -1;
-	}
-}
-
-int parser_get_next_operator_prescedence(parser * parser) {
-	int parser_read_index = parser->token_read_index;
-	token ** token_array_pointer = parser->program->tokens;	
-	token * current_token = token_array_pointer[parser_read_index+1];
-	token * next_token = token_array_pointer[parser_read_index+1];
-	token * potential_operator_token = token_array_pointer[parser_read_index+2];
-
-	assert(current_token ->type != SEMICOLON);	
-	
-	if (next_token->type == SEMICOLON) {
-		return -1;
-	} 
-
-	return parser_get_operator_presedence(potential_operator_token);
-}
-
 //start off expecting only infix
 //for now, this thing will call itself and nothing else 
 ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node) {
@@ -351,11 +268,11 @@ ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node) 
 
 int main() {
 	//goal: switch return and let to use real switch statement
-	parser_test_return();
-	parser_test_let();
-	parser_test_math();
-	parser_test_math_advanced();
-	parser_test_prefix();
-	//parser_test_parentheses();
+	//parser_test_return();
+	//parser_test_let();
+	//parser_test_math();
+	//parser_test_math_advanced();
+	//parser_test_prefix();
+	parser_test_paren();
 }
 

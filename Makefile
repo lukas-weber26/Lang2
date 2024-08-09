@@ -1,5 +1,5 @@
-output: _parser.o _lexer.o _test_parser.o _print.o
-	cc -g _parser.o _lexer.o _test_parser.o _print.o -o output
+output: _parser.o _lexer.o _test_parser.o _print.o _operators.o
+	cc -g _parser.o _lexer.o _test_parser.o _print.o _operators.o -o output
 	rm *.o 
 	./output
 
@@ -14,5 +14,9 @@ _test_parser.o: test_parser.c
 
 _print.o: print.c
 	cc -c -g print.c -o _print.o
+
+_operators.o: operators.c
+	cc -c -g operators.c -o _operators.o
+
 clean: 
 	rm *.o output

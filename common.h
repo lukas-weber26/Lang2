@@ -54,6 +54,7 @@ void parser_test_let();
 void parser_test_math();
 void parser_test_math_advanced();
 void parser_test_prefix();
+void parser_test_paren();
 
 tokenized_program * tokenizer_init(char * input_program, int approximate_token_count);
 void tokenizer_tokenize_program(tokenized_program * program);
@@ -66,3 +67,9 @@ void parser_print_node_and_children(ast_node * ast_node, int depth);
 void print_operator(ast_node * ast_node, int depth, char * operator_name);
 void print_depth(int depth);
 void parser_print_program(parser * parser);
+
+int parser_get_next_operator_prescedence(parser * parser);
+int parser_get_operator_presedence(token * operator_token);
+int token_token_is_gramar(token * token);
+int is_valid_infix_operator(token * token);
+
