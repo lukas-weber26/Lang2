@@ -1,11 +1,9 @@
 #include "common.h"
+#include <stdio.h>
 
-ast_node * parser_parse_token(parser * parser);
 void parser_free_ast(ast_node * ast_node);
-ast_node * parser_parse_let(parser * parser);
-ast_node * parser_parse_return(parser * parser);
 ast_node * new_generic_node();
-ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node);
+ast_node * parser_parse_token(parser * parser, ast_node * left_node);
 
 parser * parser_init(char * input, int approximate_token_count) {
 	tokenized_program * program = tokenizer_init(input, approximate_token_count);
@@ -45,156 +43,10 @@ ast_node * new_generic_node() {
 	return new_node;
 }
 
-ast_node * parser_parse_let(parser * parser) {
-	//get the next couple of tokens to make sure they fit into a let statement
-	int parser_read_index = parser->token_read_index;
-	token ** token_array_pointer = parser->program->tokens;	
-
-	//check the requirements for the let expression
-	token * let = token_array_pointer[parser_read_index];
-	token * symbol = token_array_pointer[parser_read_index + 1];
-	token * equals = token_array_pointer[parser_read_index + 2];
-	token * expression = token_array_pointer[parser_read_index + 3];
-
-	//The whole != EOF thing should probably be a isValidExpression function....
-	if (symbol->type == IDENTIFIER && equals->type == EQUAL && !token_token_is_gramar(expression)) {
-		ast_node * new_let_node = new_generic_node();
-		new_let_node->lexer_token = let;
-	
-		new_let_node->left_node = new_generic_node();
-		new_let_node->left_node->lexer_token = symbol;
-
-		parser->token_read_index += 3;
-		new_let_node->right_node = parser_parse_token(parser); //for now I will not attach values to the nodes.
-
-		return new_let_node;
-
-	} else {
-		printf("Invalid let statement detected at line %d, position %d.\n", let->line, let->position);
-		printf("Expected Identifier = Symbol, Received %s %s %s...\n", symbol->token_string, equals->token_string, expression->token_string);
-		exit(0);
-	}
-}
-
-ast_node * parser_parse_return(parser * parser) {
-	//get the next couple of tokens to make sure they fit into a let statement
-	int parser_read_index = parser->token_read_index;
-	token ** token_array_pointer = parser->program->tokens;	
-
-	//check the requirements for the let expression
-	token * return_symbol = token_array_pointer[parser_read_index];
-	token * return_value = token_array_pointer[parser_read_index + 1];
-
-	//The whole != EOF thing should probably be a isValidExpression function....
-	if (!token_token_is_gramar(return_value)) {
-		ast_node * new_return_node = new_generic_node();
-		new_return_node ->lexer_token = return_symbol;
-
-		parser->token_read_index += 1; //decrease for acutal use (used to be 2)
-		new_return_node->left_node= parser_parse_token(parser); //for now I will not attach values to the nodes.
-		//
-		//new_return_node->left_node= new_generic_node();
-		//new_return_node->left_node->lexer_token = return_value;
-		//new_return_node -> left_node = parser_parse_token(parser); 
-		return new_return_node;
-
-	} else {
-		printf("Invalid return statement detected at line %d, position %d.\n", return_symbol->line, return_symbol->position);
-		printf("Expected return expression, Received %s %s...\n", return_symbol->token_string, return_value->token_string);
-		exit(0);
-	}
-}
-
-ast_node * parser_parse_prefix_expression(parser * parser) {
-
-	token * current = parser->program->tokens[parser->token_read_index];
-	token * peek = parser->program->tokens[parser->token_read_index+1];
-
-	if (current->type == LPAREN) {
-		//this is almost certainly bad 	
-		parser->token_read_index ++;
-		return parser_parse_token(parser); 
-
-	} else if (peek->type == INT || peek ->type == IDENTIFIER) {
-		ast_node * prefix_root_node = new_generic_node();
-		prefix_root_node -> lexer_token = current;
-
-		ast_node * prefix_leaf_node = new_generic_node();
-		prefix_leaf_node -> lexer_token = peek;
-
-		prefix_root_node -> left_node = prefix_leaf_node;
-		parser->token_read_index += 2;
-
-		if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index]) != -1) {
-			return parser_parse_infix_expression(parser, prefix_root_node);
-		} else {
-			return prefix_root_node;
-		}
-
-	} else {printf("Invalid prefix expression detected at line %d, position %d.\n", current->line, current->position);
-		printf("Expected type INT, IDENTIFIER or LPAREN, received %s...\n", peek->token_string);
-		exit(0);
-	}
-
-}
-
-ast_node * parser_handle_leading_paren(parser * parser) {
-	ast_node * infix_result = parser_parse_prefix_expression(parser);
-	parser->token_read_index+=1;
-	if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index]) != -1) {
-		return parser_parse_infix_expression(parser, infix_result);	
-	} else {
-		return infix_result;
-	}
-}
-
-ast_node * parser_parse_token(parser * parser) {
-	//typedef enum {
-//IDENTIFIER, FUNCTION, ADD, SUBTRACT,COMPARE, GT, LT, GTE, LTE, OR, AND, TRUE, FALSE, IF, ELSE, EQUAL,NOT_EQUAL,DIVIDE,MULTIPLY, BANG, ILLIGAL,SEMICOLON,LPAREN, RPAREN, LBRACE,RBRACE,END, COMMA, BRANCH 
-//} token_type;
-
-	token * current_token = parser->program->tokens[parser->token_read_index]; //make sure to update parser->token_read_index
-	switch (current_token->type) {
-		case LET:
-			return parser_parse_let(parser);
-		case RETURN:
-			return parser_parse_return(parser);
-		case SEMICOLON: 
-			parser->token_read_index++;
-			return NULL;
-		case LPAREN: //this might actually brick a lot of things....
-			return parser_handle_leading_paren(parser);
-		case RPAREN: //you are the problem
-			parser->token_read_index++;
-			return NULL;//parser_parse_token(parser);	
-		default:
-			if (is_valid_infix_operator(current_token)) {
-				return parser_parse_prefix_expression(parser);
-			} else if (current_token->type == IDENTIFIER || current_token->type == INT) {
-				if (parser_get_operator_presedence(parser->program->tokens[parser->token_read_index+1]) != -1) {
-					ast_node * new_left_node = new_generic_node();
-					new_left_node->lexer_token = current_token;
-					parser->token_read_index ++;
-					return parser_parse_infix_expression(parser,new_left_node); 
-				} else { 
-					ast_node * new_node = new_generic_node();
-					new_node ->lexer_token = current_token;
-					parser->token_read_index ++;
-					return new_node;
-				}
-			} else {
-				parser->token_read_index++; //these ++ expressions are citical, without them the tokenizer can get stuck 
-				return NULL;
-			}
-
-		//some more things could go here. Ie an algebraic case, a semicolon case? Idk.
-	}
-}
-
 void parser_parse_program(parser * parser) {
 
 	while (parser->program->tokens[parser->token_read_index]->type != END) { 
-		ast_node * new_node = parser_parse_token(parser);
+		ast_node * new_node = parser_parse_token(parser,NULL);
 		if (new_node != NULL) {
 			parser->expressions[parser->current_expression] = new_node;
 			parser->current_expression++;
@@ -229,63 +81,179 @@ void parser_free_parser(parser * parser) {
 	free(parser);
 }
 
-//start off expecting only infix
-//for now, this thing will call itself and nothing else 
-ast_node * parser_parse_infix_expression(parser * parser, ast_node * left_node) {
-	int parser_read_index = parser->token_read_index;
-	token ** token_array_pointer = parser->program->tokens;	
+int is_valid_infix_op(token * token);
+int is_valid_val(token * token);
+int is_valid_prefix_op(token * token);
+int is_valid_paren(token * token);
+int is_valid_val(token * token);
+int parser_next_op_is_higher_order(parser * parser, int current_operator_index);
+int parser_get_op_order(token * token);
 
-	//check the requirements for the let expression
-	token * operator_token = token_array_pointer[parser_read_index];
-	token * expression_token = token_array_pointer[parser_read_index + 1];
+int is_valid_infix_op(token * token) {
+	token_type type = token->type;
+	if (type== ADD || type == MULTIPLY || type == SUBTRACT) {
+		return 1;
+	}
+	return 0;
+}
 
-	//check if the expression is valid?.
+int is_valid_val(token * token) {
+	token_type type = token->type;
+	if (type == INT || type == IDENTIFIER) {
+		return 1;
+	}
+	return 0;
+}
 
-	//no matter what, you will need your value attached to your operator
-	ast_node * operator_node = new_generic_node();
-	
-	operator_node->lexer_token = operator_token;
-	operator_node->left_node = left_node;
+int is_valid_prefix_op(token * token) {
+	token_type type = token->type;
+	if (type == SUBTRACT) {
+		return 1;
+	}
+	return 0;
+}
 
-	//find the next operator
-	if (is_valid_infix_operator(expression_token)) {
-		parser->token_read_index += 1;
-		operator_node -> right_node = parser_parse_prefix_expression(parser);
-		return operator_node;
-	} else {
-		int current_op_presedence= parser_get_operator_presedence(operator_token);
-		int next_op_prescedence = parser_get_next_operator_prescedence(parser);
+int is_valid_paren(token * token) {
+	token_type type = token->type;
+	if (type == LPAREN) {
+		return 1;
+	}
+	return 0;
+}
 
-		if (next_op_prescedence == -1) { //expression done
-			ast_node * expression_node = new_generic_node();
-			expression_node->lexer_token = expression_token;
-			operator_node->right_node = expression_node;
-			parser->token_read_index += 2;
-			return operator_node;
-		} else if (next_op_prescedence < current_op_presedence) {//lower priority
-			ast_node * expression_node = new_generic_node();
-			expression_node->lexer_token = expression_token;
-			operator_node->right_node = expression_node;
-			parser->token_read_index += 2;
-			return parser_parse_infix_expression(parser, operator_node);
-		} else {//next is higher priority {
-			ast_node * new_left_node = new_generic_node();
-			new_left_node->lexer_token = token_array_pointer[parser_read_index + 1];
-			parser->token_read_index += 2;
-			operator_node->right_node = parser_parse_infix_expression(parser, new_left_node);
-			return operator_node;
-		}
+int parser_get_op_order(token * token) {
+	switch (token->type) {
+		case RPAREN:
+			return 10000;
+		case LPAREN:
+			return -10000;
+		case MULTIPLY:
+			return 6;
+		case ADD: 
+			return 5;
+		case SUBTRACT:
+			return 4;
+		default: 
+			return -1;
+	}
+}
+
+int parser_next_op_is_higher_order(parser * parser, int current_operator_index) {
+	token ** tokens = parser->program->tokens;
+	if (is_valid_infix_op(tokens[current_operator_index + 1]) || is_valid_paren(tokens[current_operator_index + 1])) {
+		return 1;
 	}
 
+	if (parser_get_op_order(tokens[current_operator_index]) < parser_get_op_order(tokens[current_operator_index + 2])) {
+		return 1;
+	}
+
+	return 0;
 }
+
+ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
+	token ** tokens = parser->program->tokens;
+	int read_index = parser->token_read_index;
+
+	if (left_node == NULL)	{
+		//four possible cases: //val,op (infix) //op (prefix) //( paren //val (standalone value)
+		if (is_valid_val(tokens[read_index]) && is_valid_infix_op(tokens[read_index+1])) {
+			ast_node * new_left_node = new_generic_node();
+			new_left_node ->lexer_token = tokens[read_index+1];
+			new_left_node -> left_node = new_generic_node();
+			new_left_node -> left_node->lexer_token = tokens[read_index];
+			parser->token_read_index += 2;			
+
+			if (!parser_next_op_is_higher_order(parser, read_index + 1)) {
+				new_left_node -> right_node = new_generic_node();
+				new_left_node -> right_node -> lexer_token = tokens[read_index + 2];
+				parser->token_read_index += 1;	
+			} else {
+				new_left_node -> right_node = parser_parse_token(parser, NULL);	
+			}
+			
+			return parser_parse_token(parser, new_left_node);
+
+		} else if (is_valid_prefix_op(tokens[read_index])) {
+			
+			//this thing is suspiciously simple 
+			ast_node * new_left_node = new_generic_node();
+			new_left_node ->lexer_token = tokens[read_index];
+			parser->token_read_index += 1;			
+
+			if (!parser_next_op_is_higher_order(parser, read_index + 1)) {
+				new_left_node -> right_node = new_generic_node();
+				new_left_node -> right_node -> lexer_token = tokens[read_index + 2];
+				parser->token_read_index += 1;	
+			} else {
+				new_left_node -> right_node = parser_parse_token(parser, NULL);	
+			}
+			
+			return parser_parse_token(parser, new_left_node);
+
+		} else if (is_valid_paren(tokens[read_index])) {
+			parser->token_read_index += 1;	
+			ast_node * parentheses_expression_node = parser_parse_token(parser, NULL);	
+			return parser_parse_token(parser, parentheses_expression_node);
+		} else if (is_valid_val(tokens[read_index])) {
+			ast_node * new_left_node = new_generic_node();
+			new_left_node ->lexer_token = tokens[read_index];
+			parser->token_read_index += 1;
+			return new_left_node;
+		} else if (tokens[read_index]->type == SEMICOLON) {
+			parser->token_read_index += 1;
+			return NULL;	
+		} else {
+			token * problem_token = tokens[read_index];
+			printf("PARSER ERROR (type 1): received invalid token order at line %d, position %d.\n", problem_token->line, problem_token->position);
+			printf("Received token: %s\n", problem_token->token_string);
+			exit(0);
+		}
+	
+	} else {
+		if (is_valid_infix_op(tokens[read_index])) { //this is the infix case
+			ast_node * new_operator_node = new_generic_node();
+			new_operator_node -> lexer_token = tokens[read_index];
+			new_operator_node -> left_node = left_node;
+			parser->token_read_index +=1;
+				
+			if (!parser_next_op_is_higher_order(parser, read_index)) {
+				new_operator_node -> right_node = new_generic_node();
+				new_operator_node -> right_node -> lexer_token = tokens[read_index + 1];
+				parser->token_read_index += 1;	
+			} else {
+				new_operator_node -> right_node = parser_parse_token(parser, NULL);	
+			}
+			
+			return parser_parse_token(parser, new_operator_node);
+			
+		} else if (tokens[read_index]->type == SEMICOLON) {
+			//this is suss as well. Unclear if this will really stop anything 
+			//parser->token_read_index += 1;
+			return left_node;
+		} else if (tokens[read_index]->type == RPAREN) {
+			//idea behind this case: If a previous expression was high order due to parentheses, a right parentheses might be the next operator.
+			//if this is the case, just skip the parentheses and expect valid infix
+			//this is kind of suspicious 
+			parser->token_read_index += 1;
+			return parser_parse_token(parser, left_node);
+		} else {
+			token * problem_token = tokens[read_index];
+			printf("PARSER ERROR (type 2): received invalid token order at line %d, position %d.\n", problem_token->line, problem_token->position);
+			printf("Received token: %s\n", problem_token->token_string);
+			exit(0);
+		}
+	}
+}
+
 
 int main() {
 	//goal: switch return and let to use real switch statement
 	//parser_test_return();
 	//parser_test_let();
-	//parser_test_math();
+	parser_test_math();
 	//parser_test_math_advanced();
 	//parser_test_prefix();
-	parser_test_paren();
+	//parser_test_paren();
 }
 
