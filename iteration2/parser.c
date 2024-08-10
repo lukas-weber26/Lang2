@@ -1,5 +1,4 @@
 #include "common.h"
-#include <stdio.h>
 
 void parser_free_ast(ast_node * ast_node);
 ast_node * new_generic_node();
@@ -123,14 +122,14 @@ int is_valid_paren(token * token) {
 
 int parser_get_op_order(token * token) {
 	switch (token->type) {
-		case RPAREN:
-			return 10000;
 		case LPAREN:
+			return 10000;
+		case RPAREN:
 			return -10000;
 		case MULTIPLY:
-			return 6;
-		case ADD: 
 			return 5;
+		case ADD: 
+			return 4;
 		case SUBTRACT:
 			return 4;
 		default: 
@@ -181,9 +180,9 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 			new_left_node ->lexer_token = tokens[read_index];
 			parser->token_read_index += 1;			
 
-			if (!parser_next_op_is_higher_order(parser, read_index + 1)) {
+			if (!parser_next_op_is_higher_order(parser, read_index)) {
 				new_left_node -> right_node = new_generic_node();
-				new_left_node -> right_node -> lexer_token = tokens[read_index + 2];
+				new_left_node -> right_node -> lexer_token = tokens[read_index + 1];
 				parser->token_read_index += 1;	
 			} else {
 				new_left_node -> right_node = parser_parse_token(parser, NULL);	
@@ -193,8 +192,10 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 
 		} else if (is_valid_paren(tokens[read_index])) {
 			parser->token_read_index += 1;	
-			ast_node * parentheses_expression_node = parser_parse_token(parser, NULL);	
-			return parser_parse_token(parser, parentheses_expression_node);
+			return parser_parse_token(parser, NULL); //new version is simpler?
+			//these are old and untested as far as I understand.
+			//ast_node * parentheses_expression_node = parser_parse_token(parser, NULL);	
+			//return parser_parse_token(parser, parentheses_expression_node);
 		} else if (is_valid_val(tokens[read_index])) {
 			ast_node * new_left_node = new_generic_node();
 			new_left_node ->lexer_token = tokens[read_index];
@@ -236,7 +237,7 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 			//if this is the case, just skip the parentheses and expect valid infix
 			//this is kind of suspicious 
 			parser->token_read_index += 1;
-			return parser_parse_token(parser, left_node);
+			return left_node; //parser_parse_token(parser, left_node);
 		} else {
 			token * problem_token = tokens[read_index];
 			printf("PARSER ERROR (type 2): received invalid token order at line %d, position %d.\n", problem_token->line, problem_token->position);
@@ -251,9 +252,12 @@ int main() {
 	//goal: switch return and let to use real switch statement
 	//parser_test_return();
 	//parser_test_let();
-	parser_test_math();
-	//parser_test_math_advanced();
-	//parser_test_prefix();
-	//parser_test_paren();
+	
+	//parser_test_math(); //-> should pass
+	//parser_test_prefix(); //->should pass
+	
+	//parser_test_math_advanced(); -> implementation not complete
+
+	parser_test_paren(); 
 }
 

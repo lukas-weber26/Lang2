@@ -73,54 +73,54 @@ void parser_test_math() {
 	printf("Starting math test.\n");
 
 	char * input = "x * 10 + 5;\n"
-	"x + 10 * 5;\n";
-	//"a + b + c + d;\n"
-	//"a + b * c + d * e;\n";
+	"x + 10 * 5;\n"
+	"a + b + c + d;\n"
+	"a + b * c + d * e;\n";
 
 	parser * parser = parser_init(input, 10);
 	parser_parse_program(parser);	
 
-	//assert(parser->number_of_expression == 4);
+	assert(parser->number_of_expression == 4);
 
-	////unfortunately, this mess is best tested manually
-	//ast_node * first = parser->expressions[0];
-	//assert(first->lexer_token->type == ADD);
-	//assert(first->left_node->lexer_token->type == MULTIPLY);
-	//assert(first->left_node->left_node->lexer_token->type == IDENTIFIER);
-	//assert(strcmp(first->left_node->left_node->lexer_token->token_string, "x") == 0);
-	//assert(first->left_node->right_node->lexer_token->type == INT);
-	//assert(strcmp(first->left_node->right_node->lexer_token->token_string, "10") == 0);
-	//assert(first->right_node->lexer_token->type == INT);
-	//assert(strcmp(first->right_node->lexer_token->token_string, "5") ==0);
-	//
-	//ast_node * second = parser->expressions[1];
-	//assert(second->lexer_token->type == ADD);
-	//assert(second->left_node->lexer_token->type == IDENTIFIER);
-	//assert(second->right_node->lexer_token->type == MULTIPLY);
-	//assert(second->right_node->left_node->lexer_token->type == INT);
-	//assert(strcmp(second->right_node->left_node->lexer_token->token_string, "10") == 0);
-	//assert(second->right_node->right_node->lexer_token->type == INT);
-	//assert(strcmp(second->right_node->right_node->lexer_token->token_string, "5") == 0);
-	//
-	//ast_node * third = parser->expressions[2];
-	//assert(third->lexer_token->type == ADD);
-	//assert(third->left_node->lexer_token->type == IDENTIFIER);
-	//assert(third->right_node->lexer_token->type == ADD);
-	//assert(third->right_node->left_node->lexer_token->type == IDENTIFIER);
-	//assert(third->right_node->right_node->lexer_token->type == ADD);
-	//assert(third->right_node->right_node->left_node->lexer_token->type == IDENTIFIER);
-	//assert(third->right_node->right_node->right_node->lexer_token->type == IDENTIFIER);
+	//unfortunately, this mess is best tested manually
+	ast_node * first = parser->expressions[0];
+	assert(first->lexer_token->type == ADD);
+	assert(first->left_node->lexer_token->type == MULTIPLY);
+	assert(first->left_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(strcmp(first->left_node->left_node->lexer_token->token_string, "x") == 0);
+	assert(first->left_node->right_node->lexer_token->type == INT);
+	assert(strcmp(first->left_node->right_node->lexer_token->token_string, "10") == 0);
+	assert(first->right_node->lexer_token->type == INT);
+	assert(strcmp(first->right_node->lexer_token->token_string, "5") ==0);
+	
+	ast_node * second = parser->expressions[1];
+	assert(second->lexer_token->type == ADD);
+	assert(second->left_node->lexer_token->type == IDENTIFIER);
+	assert(second->right_node->lexer_token->type == MULTIPLY);
+	assert(second->right_node->left_node->lexer_token->type == INT);
+	assert(strcmp(second->right_node->left_node->lexer_token->token_string, "10") == 0);
+	assert(second->right_node->right_node->lexer_token->type == INT);
+	assert(strcmp(second->right_node->right_node->lexer_token->token_string, "5") == 0);
+	
+	ast_node * third = parser->expressions[2];
+	assert(third->lexer_token->type == ADD);
+	assert(third->left_node->lexer_token->type == ADD);
+	assert(third->left_node->left_node->lexer_token->type == ADD);
+	assert(third->left_node->left_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(third->left_node->left_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(third->left_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(third->right_node->lexer_token->type == IDENTIFIER);
 
-	//ast_node * fourth = parser->expressions[3];
-	//assert(fourth->lexer_token->type == ADD);
-	//assert(fourth->left_node->lexer_token->type == IDENTIFIER);
-	//assert(fourth->right_node->lexer_token->type == ADD);
-	//assert(fourth->right_node->left_node->lexer_token->type == MULTIPLY);
-	//assert(fourth->right_node->left_node->left_node->lexer_token->type == IDENTIFIER);
-	//assert(fourth->right_node->left_node->right_node->lexer_token->type == IDENTIFIER);
-	//assert(fourth->right_node->right_node->lexer_token->type == MULTIPLY);
-	//assert(fourth->right_node->right_node->left_node->lexer_token->type == IDENTIFIER);
-	//assert(fourth->right_node->right_node->right_node->lexer_token->type == IDENTIFIER);
+	ast_node * fourth = parser->expressions[3];
+	assert(fourth->lexer_token->type == ADD);
+	assert(fourth->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->lexer_token->type == ADD);
+	assert(fourth->right_node->left_node->lexer_token->type == MULTIPLY);
+	assert(fourth->right_node->left_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->left_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->right_node->lexer_token->type == MULTIPLY);
+	assert(fourth->right_node->right_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->right_node->right_node->lexer_token->type == IDENTIFIER);
 
 	parser_print_program(parser);
 	parser_free_parser(parser);
@@ -180,43 +180,43 @@ void parser_test_math_advanced() {
 void parser_test_prefix() {
 	printf("Starting prefix math test.\n");
 
-	char * input =  "- boingo + - 10;\n"
+	char * input =  "- b + - 10;\n"
 	"-5;\n"
-	"- boingo + 10;\n"
-	"x == - 10 + 10;\n";
+	"- b + 10;\n"
+	"x - - 10 + 10;\n";
 
 	parser * parser = parser_init(input, 10);
 	parser_parse_program(parser);	
 
 	//lets assert these bastards
-	//assert(parser->number_of_expression == 4);
+	assert(parser->number_of_expression == 4);
 
-	//ast_node * first = parser->expressions[0];
-	//assert(first->lexer_token->type == ADD);
-	//assert(first->left_node->lexer_token->type == SUBTRACT);
-	//assert(first->left_node->left_node->lexer_token->type == IDENTIFIER);
-	//assert(first->right_node->lexer_token->type == SUBTRACT);
-	//assert(first->right_node->left_node->lexer_token->type == INT);
-	//
-	//ast_node * second = parser->expressions[1];
-	//assert(second->lexer_token->type == SUBTRACT);
-	//assert(second->left_node->lexer_token->type == INT);
-	//assert(second->right_node == NULL);
-	//
-	//ast_node * third = parser->expressions[2];
-	//assert(third->lexer_token->type == ADD);
-	//assert(third->left_node -> lexer_token -> type == SUBTRACT);
-	//assert(third->left_node -> left_node -> lexer_token -> type == IDENTIFIER);
-	//assert(third->right_node-> lexer_token -> type == INT);
+	ast_node * first = parser->expressions[0];
+	assert(first->lexer_token->type == ADD);
+	assert(first->left_node->lexer_token->type == SUBTRACT);
+	assert(first->left_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(first->right_node->lexer_token->type == SUBTRACT);
+	assert(first->right_node->right_node->lexer_token->type == INT);
+	
+	ast_node * second = parser->expressions[1];
+	assert(second->lexer_token->type == SUBTRACT);
+	assert(second->right_node->lexer_token->type == INT);
+	assert(second->left_node== NULL);
+	
+	ast_node * third = parser->expressions[2];
+	assert(third->lexer_token->type == ADD);
+	assert(third->left_node -> lexer_token -> type == SUBTRACT);
+	assert(third->left_node -> right_node-> lexer_token -> type == IDENTIFIER);
+	assert(third->right_node-> lexer_token -> type == INT);
 
-	//ast_node * fourth = parser->expressions[3];
-	//assert(fourth->lexer_token->type == COMPARE);
-	//assert(fourth->left_node->lexer_token->type == IDENTIFIER);
-	//assert(fourth->right_node->lexer_token->type == ADD);
-	//assert(fourth->right_node->left_node->lexer_token->type == SUBTRACT);
-	//assert(fourth->right_node->left_node->left_node->lexer_token->type == INT);
-	//assert(fourth->right_node->right_node->lexer_token->type == INT);
-
+	ast_node * fourth = parser->expressions[3];
+	assert(fourth->lexer_token->type == SUBTRACT);
+	assert(fourth->left_node-> lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node-> lexer_token->type == ADD);
+	assert(fourth->right_node->left_node -> lexer_token->type == SUBTRACT);
+	assert(fourth->right_node->left_node ->right_node -> lexer_token->type == INT);
+	assert(fourth->right_node->right_node-> lexer_token->type == INT);
+	
 	parser_print_program(parser);
 	parser_free_parser(parser);
 
@@ -226,11 +226,10 @@ void parser_test_prefix() {
 void parser_test_paren() {
 	printf("Starting parentheses math test.\n");
 
-	char * input =  "b * (x + a) + 5;\n";
-
+	char * input =  //"b * (x + a) + 5;\n"
 	//"5 * (x + a);\n"
-	//"(x + a) * 10;\n"
-	//"5 * (x + a) + b;\n"
+	//"2+(d);\n"
+	"(x + a) * 10;\n";
 
 	parser * parser = parser_init(input, 10);
 	parser_parse_program(parser);	
