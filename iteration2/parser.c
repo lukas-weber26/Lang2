@@ -90,7 +90,7 @@ int parser_get_op_order(token * token);
 
 int is_valid_infix_op(token * token) {
 	token_type type = token->type;
-	if (type== ADD || type == MULTIPLY || type == SUBTRACT) {
+	if (type== ADD || type == MULTIPLY || type == SUBTRACT || type == DIVIDE || type == COMPARE || type == NOT_EQUAL|| type == GT || type == LT || type == LTE || type == GTE || type == AND || type == OR || type == EQUAL) {
 		return 1;
 	}
 	return 0;
@@ -126,12 +126,32 @@ int parser_get_op_order(token * token) {
 			return 10000;
 		case RPAREN:
 			return -10000;
+		case DIVIDE:
+			return 5;
 		case MULTIPLY:
 			return 5;
 		case ADD: 
 			return 4;
 		case SUBTRACT:
 			return 4;
+		case COMPARE:	//low prescedence
+			return 3;
+		case NOT_EQUAL:
+			return 3;
+		case GT:
+			return 3;
+		case LT:
+			return 3;
+		case GTE:
+			return 3;
+		case LTE:	//super low presedence
+			return 3; 
+		case AND:
+			return 2;
+		case OR:
+			return 2;
+		case EQUAL: //assignment is the lowest prescedence 
+			return 1;
 		default: 
 			return -1;
 	}
@@ -256,11 +276,11 @@ int main() {
 	//parser_test_return();
 	//parser_test_let();
 	
-	parser_test_math(); //-> should pass
-	parser_test_prefix(); //->should pass
+	//parser_test_math(); //-> should pass
+	//parser_test_prefix(); //->should pass
 	
-	//parser_test_math_advanced(); -> implementation not complete
+	parser_test_math_advanced(); //-> implementation not complete
 
-	parser_test_paren(); 
+	//parser_test_paren(); 
 }
 
