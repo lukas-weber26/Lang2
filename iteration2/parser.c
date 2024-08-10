@@ -273,14 +273,12 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 
 int main() {
 	//goal: switch return and let to use real switch statement
-	//parser_test_return();
-	//parser_test_let();
+	//parser_test_return(); //->not implemented yet
+	//parser_test_let(); // ->not implemented yet
 	
-	//parser_test_math(); //-> should pass
-	//parser_test_prefix(); //->should pass
-	
-	parser_test_math_advanced(); //-> implementation not complete
-
-	//parser_test_paren(); 
+	parser_test_math(); //-> should pass
+	parser_test_prefix(); //->should pass
+	parser_test_math_advanced(); //-> should pass 
+	parser_test_paren(); //->should pass
 }
 
