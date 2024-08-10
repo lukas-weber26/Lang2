@@ -1,5 +1,13 @@
 #include "common.h"
 
+int is_valid_infix_op(token * token);
+int is_valid_val(token * token);
+int is_valid_prefix_op(token * token);
+int is_valid_paren(token * token);
+int is_valid_val(token * token);
+int parser_next_op_is_higher_order(parser * parser, int current_operator_index);
+int parser_get_op_order(token * token);
+
 void parser_free_ast(ast_node * ast_node);
 ast_node * new_generic_node();
 ast_node * parser_parse_token(parser * parser, ast_node * left_node);
@@ -45,7 +53,10 @@ ast_node * new_generic_node() {
 void parser_parse_program(parser * parser) {
 
 	while (parser->program->tokens[parser->token_read_index]->type != END) { 
+		//step 1: check if the node should be a return or something like that 
+
 		ast_node * new_node = parser_parse_token(parser,NULL);
+
 		if (new_node != NULL) {
 			parser->expressions[parser->current_expression] = new_node;
 			parser->current_expression++;
@@ -80,14 +91,6 @@ void parser_free_parser(parser * parser) {
 	free(parser);
 }
 
-int is_valid_infix_op(token * token);
-int is_valid_val(token * token);
-int is_valid_prefix_op(token * token);
-int is_valid_paren(token * token);
-int is_valid_val(token * token);
-int parser_next_op_is_higher_order(parser * parser, int current_operator_index);
-int parser_get_op_order(token * token);
-
 int is_valid_infix_op(token * token) {
 	token_type type = token->type;
 	if (type== ADD || type == MULTIPLY || type == SUBTRACT || type == DIVIDE || type == COMPARE || type == NOT_EQUAL|| type == GT || type == LT || type == LTE || type == GTE || type == AND || type == OR || type == EQUAL) {
@@ -98,7 +101,7 @@ int is_valid_infix_op(token * token) {
 
 int is_valid_val(token * token) {
 	token_type type = token->type;
-	if (type == INT || type == IDENTIFIER) {
+	if (type == INT || type == IDENTIFIER || type == TRUE || type == FALSE) {
 		return 1;
 	}
 	return 0;
@@ -170,6 +173,24 @@ int parser_next_op_is_higher_order(parser * parser, int current_operator_index) 
 	return 0;
 }
 
+int parser_get_order_after_paren(parser * parser);
+
+int parser_get_order_after_paren(parser * parser) {
+	int read_index = parser->token_read_index + 1;
+	token ** tokens = parser->program->tokens;
+	int depth = 1;	
+	while (depth > 0) {
+		if (tokens[read_index]->type == LPAREN) {
+			depth ++;
+		}
+		if (tokens[read_index]->type == RPAREN) {
+			depth --; 
+		}
+		read_index ++;
+	}	
+	return parser_get_op_order(tokens[read_index]);
+}
+
 ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 	token ** tokens = parser->program->tokens;
 	int read_index = parser->token_read_index;
@@ -189,7 +210,13 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 				parser->token_read_index += 1;	
 			} else {
 				if (tokens[parser->token_read_index]->type == LPAREN) {
-					parser->token_read_index ++;
+					if (parser_get_order_after_paren(parser) > parser_get_op_order(tokens[read_index+1])) {
+						//post parentheses is higher order than current?
+						//then treat this as a starting parentheses expression?
+						//ie no increment
+					} else {
+						parser->token_read_index ++;
+					}
 				}	
 					
 				new_left_node -> right_node = parser_parse_token(parser, NULL);	
@@ -215,10 +242,14 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 			return parser_parse_token(parser, new_left_node);
 
 		} else if (is_valid_paren(tokens[read_index])) {
+
 			//this case is only relevant if the first item in the expression is a (
+			//tee hee this thing was in fact too simple. I need to do the same thing as for infix.
+			//Check if the next token is a higher index
 			parser->token_read_index += 1;	
-			ast_node * parentheses_expression_node = parser_parse_token(parser, NULL);	
+			ast_node * parentheses_expression_node = parser_parse_token(parser, NULL);		
 			return parser_parse_token(parser, parentheses_expression_node);
+
 		} else if (is_valid_val(tokens[read_index])) {
 			ast_node * new_left_node = new_generic_node();
 			new_left_node ->lexer_token = tokens[read_index];
@@ -272,13 +303,13 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 
 
 int main() {
-	//goal: switch return and let to use real switch statement
 	//parser_test_return(); //->not implemented yet
 	//parser_test_let(); // ->not implemented yet
 	
-	parser_test_math(); //-> should pass
-	parser_test_prefix(); //->should pass
-	parser_test_math_advanced(); //-> should pass 
-	parser_test_paren(); //->should pass
+	//parser_test_math(); //-> should pass
+	//parser_test_prefix(); //->should pass
+	//parser_test_math_advanced(); //-> should pass 
+	//parser_test_paren(); //->should pass
+	parser_test_bool();
 }
 

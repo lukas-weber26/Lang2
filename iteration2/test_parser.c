@@ -1,4 +1,5 @@
 #include "common.h"
+#include <math.h>
 
 //a couple of tests for parsing let and return would be good.
 void parser_test_return() {
@@ -229,12 +230,14 @@ void parser_test_paren() {
 	char * input =  "b * (x + a) + 5;\n"
 	"5 * (x + a);\n"
 	"2+(d);\n"
-	"(x + 1) * 10;\n";
+	"(x + 1) * 10;\n"
+	"x = ( 1 | two ) + 1;\n"
+	"x *  (1 | two )  + 1;\n";
 
 	parser * parser = parser_init(input, 10);
 	parser_parse_program(parser);	
 
-	assert(parser->number_of_expression == 4);
+	assert(parser->number_of_expression == 6);
 
 	ast_node * first = parser->expressions[0];
 	assert(first->lexer_token->type == ADD);
@@ -264,8 +267,57 @@ void parser_test_paren() {
 	assert(fourth->left_node->right_node->lexer_token->type == INT);
 	assert(fourth->right_node->lexer_token->type == INT);
 
+	//nice
+	ast_node * fifth = parser->expressions[4];
+	assert(fifth->lexer_token->type == EQUAL);
+	assert(fifth->left_node->lexer_token->type == IDENTIFIER);
+	assert(fifth->right_node->lexer_token->type == ADD);
+	assert(fifth->right_node->left_node->lexer_token->type == OR);
+	assert(fifth->right_node->left_node->left_node->lexer_token->type == INT);
+	assert(fifth->right_node->left_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(fifth->right_node->right_node->lexer_token->type == INT);
+
+	ast_node * sixth = parser->expressions[5];
+	assert(sixth->lexer_token->type == ADD);
+	assert(sixth->left_node->lexer_token->type == MULTIPLY);
+	assert(sixth->left_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(sixth->left_node->right_node->lexer_token->type == OR);
+	assert(sixth->left_node->right_node->left_node->lexer_token->type == INT);
+	assert(sixth->left_node->right_node->right_node->lexer_token->type == IDENTIFIER);
+
 	parser_print_program(parser);
 	parser_free_parser(parser);
 
 	printf("Parentheses math test passed.\n\n");
+}
+
+void parser_test_bool() {
+	printf("Starting bool test.\n");
+
+	char * input =  "true == false;\n"
+	"x = ( true | false ) + 1;\n"; //this is wrong : ( 
+	
+	parser * parser = parser_init(input, 10);
+	parser_parse_program(parser);	
+
+	assert(parser->number_of_expression == 2);
+	
+	ast_node * first = parser->expressions[0];
+	assert(first->lexer_token->type == COMPARE);
+	assert(first->left_node->lexer_token->type == TRUE);
+	assert(first->right_node->lexer_token->type == FALSE);
+
+	ast_node * second = parser->expressions[1];
+	assert(second->lexer_token->type == EQUAL);	
+	assert(second->left_node -> lexer_token->type == IDENTIFIER);	
+	assert(second->right_node-> lexer_token->type == ADD);	
+	assert(second->right_node-> left_node -> lexer_token->type == OR);	
+	assert(second->right_node-> left_node -> left_node-> lexer_token->type == TRUE);	
+	assert(second->right_node-> left_node -> right_node-> lexer_token->type == FALSE);	
+	assert(second->right_node-> right_node-> lexer_token->type == INT);	
+
+	parser_print_program(parser);
+	parser_free_parser(parser);
+
+	printf("Parentheses bool test.\n\n");
 }

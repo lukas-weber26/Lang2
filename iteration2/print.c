@@ -42,6 +42,12 @@ void parser_print_node_and_children(ast_node * ast_node, int depth) {
 		case INT:
 			printf("INTEGER: %s (%d,%d)\n", current->token_string, current->line, current->position);
 			break;
+		case FALSE:
+			printf("BOOL: %s (%d,%d)\n", current->token_string, current->line, current->position);
+			break;
+		case TRUE:
+			printf("BOOL: %s (%d,%d)\n", current->token_string, current->line, current->position);
+			break;
 		case ADD:
 			print_operator(ast_node, depth, "ADD");
 			break;
