@@ -68,8 +68,8 @@ void print_operator(ast_node * ast_node, int depth, char * operator_name);
 void print_depth(int depth);
 void parser_print_program(parser * parser);
 
-int parser_get_next_operator_prescedence(parser * parser);
-int parser_get_operator_presedence(token * operator_token);
-int token_token_is_gramar(token * token);
-int is_valid_infix_operator(token * token);
+//int parser_get_next_operator_prescedence(parser * parser);
+//int parser_get_operator_presedence(token * operator_token);
+//int token_token_is_gramar(token * token);
+//int is_valid_infix_operator(token * token);
 
