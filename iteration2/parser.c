@@ -168,6 +168,10 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 				new_left_node -> right_node -> lexer_token = tokens[read_index + 2];
 				parser->token_read_index += 1;	
 			} else {
+				if (tokens[parser->token_read_index]->type == LPAREN) {
+					parser->token_read_index ++;
+				}	
+					
 				new_left_node -> right_node = parser_parse_token(parser, NULL);	
 			}
 			
@@ -191,11 +195,10 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 			return parser_parse_token(parser, new_left_node);
 
 		} else if (is_valid_paren(tokens[read_index])) {
+			//this case is only relevant if the first item in the expression is a (
 			parser->token_read_index += 1;	
-			return parser_parse_token(parser, NULL); //new version is simpler?
-			//these are old and untested as far as I understand.
-			//ast_node * parentheses_expression_node = parser_parse_token(parser, NULL);	
-			//return parser_parse_token(parser, parentheses_expression_node);
+			ast_node * parentheses_expression_node = parser_parse_token(parser, NULL);	
+			return parser_parse_token(parser, parentheses_expression_node);
 		} else if (is_valid_val(tokens[read_index])) {
 			ast_node * new_left_node = new_generic_node();
 			new_left_node ->lexer_token = tokens[read_index];
@@ -253,8 +256,8 @@ int main() {
 	//parser_test_return();
 	//parser_test_let();
 	
-	//parser_test_math(); //-> should pass
-	//parser_test_prefix(); //->should pass
+	parser_test_math(); //-> should pass
+	parser_test_prefix(); //->should pass
 	
 	//parser_test_math_advanced(); -> implementation not complete
 

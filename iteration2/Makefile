@@ -1,6 +1,6 @@
 output: _parser.o _lexer.o _test_parser.o _print.o _operators.o
 	cc -g _parser.o _lexer.o _test_parser.o _print.o _operators.o -o output
-	rm *.o 
+	rm *.o
 	./output
 
 _parser.o: parser.c
