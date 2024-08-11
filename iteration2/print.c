@@ -26,17 +26,18 @@ void parser_print_node_and_children(ast_node * ast_node, int depth) {
 
 	switch (current->type) {
 		case LET:
-			printf("LET: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			depth ++;
-			parser_print_node_and_children(ast_node->left_node, depth);
-			parser_print_node_and_children(ast_node->right_node, depth);
+			print_operator(ast_node, depth, "LET");
 			break;
 		case RETURN:
-			printf("RETURN: %s (%d,%d)\n", current->token_string, current->line, current->position);
-			depth ++;
-			parser_print_node_and_children(ast_node->left_node, depth);
+			print_operator(ast_node, depth, "RETURN");
 			break;
-		case IDENTIFIER:
+		case IF:
+			print_operator(ast_node, depth, "IF");
+			break;
+		case FUNCTION:
+			print_operator(ast_node, depth, "FUNCTION DEFENITION");
+			break;
+		case IDENTIFIER: //this could have two cases, one if followed by ( as in a function call and one without 
 			printf("IDENTIFIER: %s (%d,%d)\n", current->token_string, current->line, current->position);
 			break;
 		case INT:
@@ -86,6 +87,9 @@ void parser_print_node_and_children(ast_node * ast_node, int depth) {
 			break;
 		case MULTIPLY:
 			print_operator(ast_node, depth, "MULTIPLY");
+			break;
+		case COMMA:
+			print_operator(ast_node, depth, "COMMA");
 			break;
 		default:
 			return;	

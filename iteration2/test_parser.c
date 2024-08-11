@@ -1,5 +1,4 @@
 #include "common.h"
-#include <math.h>
 
 //a couple of tests for parsing let and return would be good.
 void parser_test_return() {
@@ -189,7 +188,7 @@ void parser_test_prefix() {
 	parser * parser = parser_init(input, 10);
 	parser_parse_program(parser);	
 
-	//lets assert these bastards
+	////lets assert these bastards
 	assert(parser->number_of_expression == 4);
 
 	ast_node * first = parser->expressions[0];
@@ -295,12 +294,13 @@ void parser_test_bool() {
 	printf("Starting bool test.\n");
 
 	char * input =  "true == false;\n"
-	"x = ( true | false ) + 1;\n"; //this is wrong : ( 
+	"x = ( true | false ) + 1;\n" 
+	"x = ( true | false ) + 1;\n"; 
 	
 	parser * parser = parser_init(input, 10);
 	parser_parse_program(parser);	
 
-	assert(parser->number_of_expression == 2);
+	assert(parser->number_of_expression == 3);
 	
 	ast_node * first = parser->expressions[0];
 	assert(first->lexer_token->type == COMPARE);
@@ -315,6 +315,78 @@ void parser_test_bool() {
 	assert(second->right_node-> left_node -> left_node-> lexer_token->type == TRUE);	
 	assert(second->right_node-> left_node -> right_node-> lexer_token->type == FALSE);	
 	assert(second->right_node-> right_node-> lexer_token->type == INT);	
+
+	parser_print_program(parser);
+	parser_free_parser(parser);
+
+	printf("Parentheses bool test.\n\n");
+}
+
+void parser_test_let_return() {
+	printf("Starting let/return/if/fn test.\n");
+
+	char * input =  "return (10 * x) + 2;\n"
+	"let a = 4 * (10 * x) + 2;\n"
+	"if (x > 2);\n"
+	"let x = function (x > 2);\n"; //note that let statements are a bit weird in the AST
+
+	parser * parser = parser_init(input, 10);
+	parser_parse_program(parser);	
+
+	assert(parser->number_of_expression == 4);
+	
+	ast_node * first = parser->expressions[0];
+	assert(first->lexer_token->type == RETURN);
+	assert(first->left_node == NULL);
+	assert(first->right_node->lexer_token->type == ADD);
+	assert(first->right_node->left_node->lexer_token->type == MULTIPLY);
+	assert(first->right_node->left_node->left_node->lexer_token->type == INT);
+	assert(first->right_node->left_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(first->right_node->right_node->lexer_token->type == INT);
+
+	ast_node * second = parser->expressions[1];
+	assert(second->lexer_token->type == LET);
+	assert(second->right_node->lexer_token->type == EQUAL);
+	assert(second->right_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(second->right_node->right_node->lexer_token->type == ADD);
+	assert(second->right_node->right_node->left_node->lexer_token->type == MULTIPLY);
+	assert(second->right_node->right_node->left_node->left_node->lexer_token->type == INT);
+	assert(second->right_node->right_node->left_node->right_node->lexer_token->type == MULTIPLY);
+	assert(second->right_node->right_node->left_node->right_node->left_node->lexer_token->type == INT);
+	assert(second->right_node->right_node->left_node->right_node->right_node->lexer_token->type == IDENTIFIER);
+	assert(second->right_node->right_node->right_node->lexer_token->type == INT);
+
+	ast_node * third = parser->expressions[2];
+	assert(third->lexer_token->type == IF);
+	assert(third->right_node->lexer_token->type == GT);
+	assert(third->right_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(third->right_node->right_node->lexer_token->type == INT);
+
+	ast_node * fourth = parser->expressions[3];
+	assert(fourth->lexer_token->type == LET);
+	assert(fourth->right_node->lexer_token->type == EQUAL);
+	assert(fourth->right_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->right_node->lexer_token->type == FUNCTION);
+	assert(fourth->right_node->right_node->right_node->lexer_token->type == GT);
+	assert(fourth->right_node->right_node->right_node->left_node->lexer_token->type == IDENTIFIER);
+	assert(fourth->right_node->right_node->right_node->right_node->lexer_token->type == INT);
+
+	parser_print_program(parser);
+	parser_free_parser(parser);
+
+	printf("Parentheses let/return/if/fn test.\n\n");
+}
+
+void parser_test_function_calls() {
+	printf("Starting function call test.\n");
+
+	char * input =  "add(x,y,z);\n";
+
+	parser * parser = parser_init(input, 10);
+	parser_parse_program(parser);	
+
+	assert(parser->number_of_expression == 1);
+	
 
 	parser_print_program(parser);
 	parser_free_parser(parser);

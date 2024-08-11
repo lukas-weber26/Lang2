@@ -93,10 +93,9 @@ void parser_free_parser(parser * parser) {
 
 int is_valid_infix_op(token * token) {
 	token_type type = token->type;
-	if (type== ADD || type == MULTIPLY || type == SUBTRACT || type == DIVIDE || type == COMPARE || type == NOT_EQUAL|| type == GT || type == LT || type == LTE || type == GTE || type == AND || type == OR || type == EQUAL) {
+	if (type== ADD || type == MULTIPLY || type == SUBTRACT || type == DIVIDE || type == COMPARE || type == NOT_EQUAL|| type == GT || type == LT || type == LTE || type == GTE || type == AND || type == OR || type == EQUAL || type == COMMA) {
 		return 1;
-	}
-	return 0;
+	} return 0;
 }
 
 int is_valid_val(token * token) {
@@ -107,11 +106,12 @@ int is_valid_val(token * token) {
 	return 0;
 }
 
+//wish this thing had a next
 int is_valid_prefix_op(token * token) {
 	token_type type = token->type;
-	if (type == SUBTRACT) {
+	if (type == SUBTRACT || type == RETURN || type == LET || type == IF || type == FUNCTION) { 
 		return 1;
-	}
+	} 
 	return 0;
 }
 
@@ -130,31 +130,38 @@ int parser_get_op_order(token * token) {
 		case RPAREN:
 			return -10000;
 		case DIVIDE:
-			return 5;
+			return 7;
 		case MULTIPLY:
-			return 5;
+			return 7;
 		case ADD: 
-			return 4;
+			return 5;
 		case SUBTRACT:
-			return 4;
+			return 5;
 		case COMPARE:	//low prescedence
-			return 3;
+			return 4;
 		case NOT_EQUAL:
-			return 3;
+			return 4;
 		case GT:
-			return 3;
+			return 4;
 		case LT:
-			return 3;
+			return 4;
 		case GTE:
-			return 3;
+			return 4;
 		case LTE:	//super low presedence
-			return 3; 
+			return 4; 
 		case AND:
-			return 2;
+			return 3;
 		case OR:
+			return 3;
+		return COMMA;
 			return 2;
 		case EQUAL: //assignment is the lowest prescedence 
 			return 1;
+		case RETURN: 
+			return 0;
+		case IF: //Im not sure that these really meaningfull because they are always infix followed by brackets
+		case FUNCTION:
+			return 0;
 		default: 
 			return -1;
 	}
@@ -303,13 +310,14 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 
 
 int main() {
-	//parser_test_return(); //->not implemented yet
-	//parser_test_let(); // ->not implemented yet
-	
-	//parser_test_math(); //-> should pass
-	//parser_test_prefix(); //->should pass
-	//parser_test_math_advanced(); //-> should pass 
-	//parser_test_paren(); //->should pass
+	//all of these should pass!	
+	parser_test_math(); 
+	parser_test_prefix(); 
+	parser_test_math_advanced(); 
+	parser_test_paren(); 
 	parser_test_bool();
+	parser_test_let_return();
+	//function calls!
+	parser_test_function_calls();
 }
 

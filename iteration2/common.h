@@ -56,6 +56,8 @@ void parser_test_math_advanced();
 void parser_test_prefix();
 void parser_test_paren();
 void parser_test_bool();
+void parser_test_let_return();
+void parser_test_function_calls();
 
 tokenized_program * tokenizer_init(char * input_program, int approximate_token_count);
 void tokenizer_tokenize_program(tokenized_program * program);
