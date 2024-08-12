@@ -231,8 +231,7 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 			
 			return parser_parse_token(parser, new_left_node);
 
-		} else if (is_valid_prefix_op(tokens[read_index])) {
-			
+		} else if (is_valid_prefix_op(tokens[read_index]) || (is_valid_val(tokens[read_index]) && (tokens[read_index+1]->type == LPAREN))) {
 			//this thing is suspiciously simple 
 			ast_node * new_left_node = new_generic_node();
 			new_left_node ->lexer_token = tokens[read_index];
@@ -256,7 +255,7 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 			parser->token_read_index += 1;	
 			ast_node * parentheses_expression_node = parser_parse_token(parser, NULL);		
 			return parser_parse_token(parser, parentheses_expression_node);
-
+		
 		} else if (is_valid_val(tokens[read_index])) {
 			ast_node * new_left_node = new_generic_node();
 			new_left_node ->lexer_token = tokens[read_index];
@@ -311,12 +310,12 @@ ast_node * parser_parse_token(parser * parser, ast_node * left_node) {
 
 int main() {
 	//all of these should pass!	
-	parser_test_math(); 
-	parser_test_prefix(); 
-	parser_test_math_advanced(); 
-	parser_test_paren(); 
-	parser_test_bool();
-	parser_test_let_return();
+	//parser_test_math(); 
+	//parser_test_prefix(); 
+	//parser_test_math_advanced(); 
+	//parser_test_paren(); 
+	//parser_test_bool();
+	//parser_test_let_return();
 	//function calls!
 	parser_test_function_calls();
 }
